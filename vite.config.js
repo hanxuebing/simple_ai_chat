@@ -8,28 +8,32 @@ import AutoImport from 'unplugin-auto-import/vite'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
 // https://vite.dev/config/
-export default defineConfig({
-  plugins: [
-    vue(),
-    Components({
-      globs: ['!src/components/**/*.vue'],
-      resolvers: [ElementPlusResolver()],
-    }),
-    AutoImport({
-      ignore: ['src/components/**'],
-      resolvers: [ElementPlusResolver()],
-      imports: ['vue', 'vue-router', 'pinia'],
-      eslintrc: {
-        enabled: true,
-        filepath: './.eslintrc-auto-import.json',
-      },
-    }),
-    vueDevTools(),
-  ],
-  resolve: {
-    alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url))
+export default defineConfig(() => {
+  return {
+    plugins: [
+      vue(),
+      Components({
+        globs: ['!src/components/**/*.vue'],
+        resolvers: [ElementPlusResolver()],
+      }),
+      AutoImport({
+        ignore: ['src/components/**'],
+        resolvers: [ElementPlusResolver()],
+        imports: ['vue', 'vue-router', 'pinia'],
+        eslintrc: {
+          enabled: true,
+          filepath: './.eslintrc-auto-import.json',
+        },
+      }),
+      vueDevTools(),
+    ],
+    esbuild: {
+      drop: ['console', 'debugger'],
     },
-  },
+    resolve: {
+      alias: {
+        '@': fileURLToPath(new URL('./src', import.meta.url))
+      },
+    },
+  }
 })
-

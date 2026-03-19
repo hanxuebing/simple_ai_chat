@@ -1,8 +1,5 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "extends": [
-    ".eslintrc-auto-import.json"
-  ],
   "plugins": [
     "eslint",
     "unicorn",
@@ -14,5 +11,5 @@
   },
   "categories": {
     "correctness": "error"
-  }
+  },
 }
