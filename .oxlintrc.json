@@ -1,0 +1,18 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "extends": [
+    ".eslintrc-auto-import.json"
+  ],
+  "plugins": [
+    "eslint",
+    "unicorn",
+    "oxc",
+    "vue"
+  ],
+  "env": {
+    "browser": true
+  },
+  "categories": {
+    "correctness": "error"
+  }
+}
