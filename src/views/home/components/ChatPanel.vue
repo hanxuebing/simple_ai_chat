@@ -11,6 +11,7 @@ const props = defineProps({
 const emit = defineEmits(['submitMessage'])
 
 const inputText = ref('')
+const enableComposerTransition = ref(false)
 
 const bubbleList = computed(() =>
   (props.conversation?.messages ?? []).map((message) => ({
@@ -23,6 +24,19 @@ const bubbleList = computed(() =>
 
 const hasMessages = computed(() => bubbleList.value.length > 0)
 
+const welcomeTransitionName = computed(() =>
+  enableComposerTransition.value ? 'chat-panel-intro' : '',
+)
+
+watch(
+  () => props.conversation?.id,
+  () => {
+    // 切换/新建会话时回到初始态，不播放回弹动画。
+    enableComposerTransition.value = false
+  },
+  { immediate: true },
+)
+
 const formatFullTime = (timestamp) => {
   if (!timestamp) return ''
   return new Date(timestamp).toLocaleString('zh-CN', {
@@ -33,6 +47,11 @@ const formatFullTime = (timestamp) => {
 const handleSubmit = (value) => {
   const content = String(value ?? inputText.value ?? '').trim()
   if (!content) return
+
+  if (!hasMessages.value) {
+    // 仅在“首条消息”触发中心到底部的过渡动画。
+    enableComposerTransition.value = true
+  }
 
   emit('submitMessage', content)
   inputText.value = ''
@@ -59,8 +78,14 @@ const handleSubmit = (value) => {
           />
         </div>
 
-        <div class="chat-panel__composer" :class="{ 'is-docked': hasMessages }">
-          <Transition name="chat-panel-intro">
+        <div
+          class="chat-panel__composer"
+          :class="{
+            'is-docked': hasMessages,
+            'with-transition': enableComposerTransition,
+          }"
+        >
+          <Transition :name="welcomeTransitionName">
             <div v-if="!hasMessages" class="chat-panel__welcome">
               <Welcome
                 title="开始新会话"
@@ -139,6 +164,9 @@ const handleSubmit = (value) => {
   display: flex;
   flex-direction: column;
   gap: 14px;
+}
+
+.chat-panel__composer.with-transition {
   transition:
     top 0.35s ease,
     bottom 0.35s ease,
