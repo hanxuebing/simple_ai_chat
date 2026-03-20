@@ -5,6 +5,7 @@
   --spacing: 0.25rem;
   --sidebar-width: 260px;
   --sidebar-collapsed-width: 56px;
+  --sidebar-toggle-duration: 0.2s;
   --bg-elevated-secondary: #f9f9f9;
   --menu-item-highlighted: #0000000a;
   --menu-item-active: #0000000f;

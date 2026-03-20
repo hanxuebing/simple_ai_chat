@@ -25,11 +25,6 @@ const emit = defineEmits([
   'toggleSidebar',
 ])
 
-const keywordModel = computed({
-  get: () => props.searchKeyword,
-  set: (value) => emit('update:searchKeyword', value),
-})
-
 const getPreviewText = (conversation) => {
   const lastMessage = conversation.messages.at(-1)
   return lastMessage?.content ?? '暂无消息'
@@ -42,57 +37,41 @@ const handleCreateConversation = () => {
     emit('toggleSidebar')
   }
 }
+
+const handleSearchClick = () => {
+  if (props.collapsed) {
+    emit('toggleSidebar')
+  }
+}
 </script>
 
 <template>
   <aside class="chat-sidebar" :class="{ 'is-collapsed': props.collapsed }">
     <header class="chat-sidebar__header">
-      <div class="chat-sidebar__toolbar">
-        <button
-          type="button"
-          class="chat-sidebar__menu-btn"
-          :class="{ 'is-icon-only': props.collapsed }"
-          :aria-label="props.collapsed ? '新聊天' : undefined"
-          @click="handleCreateConversation"
-        >
-          <span class="chat-sidebar__menu-icon" aria-hidden="true"></span>
-          <span v-if="!props.collapsed">新聊天</span>
-        </button>
-
-        <button
-          v-if="!props.collapsed"
-          type="button"
-          class="chat-sidebar__collapse-btn"
-          aria-label="收起侧栏"
-          @click="emit('toggleSidebar')"
-        >
-          <span class="chat-sidebar__menu-icon" aria-hidden="true"></span>
-        </button>
-      </div>
-
       <button
-        v-if="props.collapsed"
         type="button"
-        class="chat-sidebar__search-btn"
-        aria-label="展开侧栏并搜索"
-        @click="emit('toggleSidebar')"
+        class="chat-sidebar__action-btn"
+        :class="{ 'is-icon-only': props.collapsed }"
+        :aria-label="props.collapsed ? '新聊天' : undefined"
+        @click="handleCreateConversation"
       >
         <span class="chat-sidebar__menu-icon" aria-hidden="true"></span>
+        <span v-if="!props.collapsed">新聊天</span>
       </button>
 
-      <label v-else class="chat-sidebar__search" for="chat-sidebar-search">
+      <button
+        type="button"
+        class="chat-sidebar__action-btn"
+        :class="{ 'is-icon-only': props.collapsed }"
+        :aria-label="props.collapsed ? '搜索' : undefined"
+        @click="handleSearchClick"
+      >
         <span class="chat-sidebar__menu-icon" aria-hidden="true"></span>
-        <input
-          id="chat-sidebar-search"
-          v-model="keywordModel"
-          type="text"
-          placeholder="搜索聊天"
-          class="chat-sidebar__search-input"
-        />
-      </label>
+        <span v-if="!props.collapsed">搜索</span>
+      </button>
     </header>
 
-    <ElScrollbar v-if="!props.collapsed" class="chat-sidebar__scroll">
+    <ElScrollbar class="chat-sidebar__scroll" :class="{ 'is-hidden': props.collapsed }">
       <div class="chat-sidebar__list">
         <button
           v-for="conversation in conversations"
@@ -110,18 +89,29 @@ const handleCreateConversation = () => {
         <ElEmpty v-if="!conversations.length" description="暂无会话" :image-size="56" />
       </div>
     </ElScrollbar>
+
+    <button
+      type="button"
+      class="chat-sidebar__toggle-btn"
+      :class="{ 'is-collapsed': props.collapsed }"
+      :aria-label="props.collapsed ? '展开侧栏' : '收起侧栏'"
+      @click="emit('toggleSidebar')"
+    >
+      <span class="chat-sidebar__toggle-icon" aria-hidden="true"></span>
+    </button>
   </aside>
 </template>
 
 <style scoped>
 .chat-sidebar {
+  position: relative;
   width: var(--sidebar-width);
   min-width: var(--sidebar-width);
   border-right: 1px solid #e4e7ed;
   background-color: var(--bg-elevated-secondary);
   display: flex;
   flex-direction: column;
-  transition: width 0.2s ease;
+  transition: width var(--sidebar-toggle-duration) ease;
   overflow: hidden;
 }
 
@@ -136,78 +126,48 @@ const handleCreateConversation = () => {
   flex-direction: column;
   gap: 8px;
   border-bottom: 1px solid #eceff5;
+  transition:
+    padding var(--sidebar-toggle-duration) ease,
+    gap var(--sidebar-toggle-duration) ease,
+    border-color var(--sidebar-toggle-duration) ease;
 }
 
 .chat-sidebar.is-collapsed .chat-sidebar__header {
   padding: 10px 8px;
   gap: 6px;
-  border-bottom: none;
+  border-bottom-color: transparent;
 }
 
-.chat-sidebar__toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.chat-sidebar.is-collapsed .chat-sidebar__toolbar {
-  justify-content: center;
-}
-
-.chat-sidebar__menu-btn {
+.chat-sidebar__action-btn {
+  height: calc(var(--spacing) * 9);
+  width: 100%;
   border: none;
   background: transparent;
-  padding: 6px 4px;
+  padding: 0 8px;
   border-radius: 8px;
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   gap: 8px;
   color: #1f2937;
   font-size: 13px;
   text-align: left;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: background-color var(--sidebar-toggle-duration) ease;
 }
 
-.chat-sidebar__menu-btn.is-icon-only,
-.chat-sidebar__search-btn {
-  width: 100%;
-  height: 32px;
-  border: none;
-  border-radius: 8px;
-  background: transparent;
-  display: inline-flex;
-  align-items: center;
+.chat-sidebar__action-btn.is-icon-only {
   justify-content: center;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
+  padding: 0;
 }
 
-.chat-sidebar__menu-btn:hover,
-.chat-sidebar__collapse-btn:hover,
-.chat-sidebar__search-btn:hover,
+.chat-sidebar__action-btn:hover,
 .chat-sidebar__item:hover {
   background-color: var(--menu-item-highlighted);
 }
 
-.chat-sidebar__menu-btn:active,
-.chat-sidebar__collapse-btn:active,
-.chat-sidebar__search-btn:active {
+.chat-sidebar__action-btn:active {
   background-color: var(--menu-item-open);
-}
-
-.chat-sidebar__collapse-btn {
-  width: 28px;
-  height: 28px;
-  border: none;
-  border-radius: 8px;
-  background: transparent;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
 }
 
 .chat-sidebar__menu-icon {
@@ -218,36 +178,22 @@ const handleCreateConversation = () => {
   flex-shrink: 0;
 }
 
-.chat-sidebar__search {
-  border: 1px solid #d7dce6;
-  border-radius: 8px;
-  background-color: #fff;
-  padding: 6px 8px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.chat-sidebar__search:focus-within {
-  border-color: #409eff;
-  box-shadow: 0 0 0 1px rgba(64, 158, 255, 0.18);
-}
-
-.chat-sidebar__search-input {
-  width: 100%;
-  border: none;
-  outline: none;
-  font-size: 13px;
-  color: #1f2937;
-  background: transparent;
-}
-
-.chat-sidebar__search-input::placeholder {
-  color: #9aa4b2;
-}
-
 .chat-sidebar__scroll {
   flex: 1;
+  opacity: 1;
+  visibility: visible;
+  transition:
+    opacity var(--sidebar-toggle-duration) ease,
+    visibility 0s linear 0s;
+}
+
+.chat-sidebar__scroll.is-hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity var(--sidebar-toggle-duration) ease,
+    visibility 0s linear var(--sidebar-toggle-duration);
 }
 
 .chat-sidebar__list {
@@ -256,6 +202,7 @@ const handleCreateConversation = () => {
   flex-direction: column;
   gap: 4px;
 }
+
 .chat-sidebar__item {
   height: calc(var(--spacing) * 9);
   border: none;
@@ -264,7 +211,7 @@ const handleCreateConversation = () => {
   padding: 7px 8px;
   border-radius: 8px;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: background-color var(--sidebar-toggle-duration) ease;
   display: flex;
   align-items: center;
 }
@@ -282,5 +229,47 @@ const handleCreateConversation = () => {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+
+.chat-sidebar__toggle-btn {
+  position: absolute;
+  top: 12px;
+  right: -14px;
+  width: 28px;
+  height: 28px;
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+  background-color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+  transition:
+    background-color var(--sidebar-toggle-duration) ease,
+    border-color var(--sidebar-toggle-duration) ease,
+    box-shadow var(--sidebar-toggle-duration) ease;
+  z-index: 2;
+}
+
+.chat-sidebar__toggle-btn:hover {
+  background-color: var(--menu-item-highlighted);
+}
+
+.chat-sidebar__toggle-btn:active {
+  background-color: var(--menu-item-open);
+}
+
+.chat-sidebar__toggle-icon {
+  width: 8px;
+  height: 8px;
+  border-top: 1.5px solid #6b7280;
+  border-right: 1.5px solid #6b7280;
+  transform: rotate(-135deg);
+  transition: transform var(--sidebar-toggle-duration) ease;
+}
+
+.chat-sidebar__toggle-btn.is-collapsed .chat-sidebar__toggle-icon {
+  transform: rotate(45deg);
 }
 </style>
