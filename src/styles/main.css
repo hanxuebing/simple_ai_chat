@@ -3,6 +3,7 @@
 @theme {
   --color-brand: #0f766e;
   --spacing: 0.25rem;
+  --text-size-14: 0.875rem;
   --sidebar-width: 260px;
   --sidebar-collapsed-width: 56px;
   --sidebar-toggle-duration: 0.2s;
@@ -11,3 +12,4 @@
   --menu-item-active: #0000000f;
   --menu-item-open: #00000006;
 }
+

@@ -46,7 +46,7 @@ const handleSearchClick = () => {
 </script>
 
 <template>
-  <aside class="chat-sidebar" :class="{ 'is-collapsed': props.collapsed }">
+  <aside class="chat-sidebar text-size-14" :class="{ 'is-collapsed': props.collapsed }">
     <header class="chat-sidebar__header">
       <button
         type="button"
@@ -150,7 +150,6 @@ const handleSearchClick = () => {
   justify-content: flex-start;
   gap: 8px;
   color: #1f2937;
-  font-size: 13px;
   text-align: left;
   cursor: pointer;
   transition: background-color var(--sidebar-toggle-duration) ease;
@@ -223,7 +222,6 @@ const handleSearchClick = () => {
 .chat-sidebar__item-preview {
   flex: 1;
   margin: 0;
-  font-size: 12px;
   color: #334155;
   line-height: 1.4;
   overflow: hidden;
