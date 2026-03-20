@@ -14,18 +14,7 @@ const buildConversation = (conversation = {}) => ({
 })
 
 export const useConversationManager = () => {
-  const conversations = ref([
-    buildConversation({
-      title: '欢迎会话',
-      messages: [
-        {
-          id: createId(),
-          role: 'assistant',
-          content: '你好，我是联调助手。你可以从左侧新建会话后开始输入问题。',
-        },
-      ],
-    }),
-  ])
+  const conversations = ref([buildConversation()])
 
   const activeConversationId = ref(conversations.value[0]?.id ?? '')
   const searchKeyword = ref('')
@@ -110,3 +99,4 @@ export const useConversationManager = () => {
     submitMessage,
   }
 }
+
