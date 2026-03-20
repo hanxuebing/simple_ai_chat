@@ -6,7 +6,7 @@ import Components from 'unplugin-vue-components/vite'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 import AutoImport from 'unplugin-auto-import/vite'
 import vueDevTools from 'vite-plugin-vue-devtools'
-
+import tailwindcss from '@tailwindcss/vite'
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd())
@@ -26,6 +26,7 @@ export default defineConfig(({ mode }) => {
           filepath: './.eslintrc-auto-import.json',
         },
       }),
+      tailwindcss(),
       vueDevTools(),
     ],
     esbuild: {
