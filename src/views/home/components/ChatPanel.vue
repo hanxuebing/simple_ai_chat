@@ -1,5 +1,5 @@
 <script setup>
-import { BubbleList, Sender, Welcome } from 'vue-element-plus-x'
+import { BubbleList, Sender } from 'vue-element-plus-x'
 
 const props = defineProps({
   conversation: {
@@ -12,6 +12,16 @@ const emit = defineEmits(['submitMessage'])
 
 const inputText = ref('')
 const enableComposerTransition = ref(false)
+
+const suggestedQuestions = [
+  'APT 报告里最优先处理的风险点有哪些？',
+  '这次告警和历史事件相比有什么异常趋势？',
+  '如果今天要联调接口，最小可验证流程是什么？',
+]
+
+const handleSuggestionPick = (question) => {
+  inputText.value = question
+}
 
 const bubbleList = computed(() =>
   (props.conversation?.messages ?? []).map((message) => ({
@@ -37,13 +47,6 @@ watch(
   { immediate: true },
 )
 
-const formatFullTime = (timestamp) => {
-  if (!timestamp) return ''
-  return new Date(timestamp).toLocaleString('zh-CN', {
-    hour12: false,
-  })
-}
-
 const handleSubmit = (value) => {
   const content = String(value ?? inputText.value ?? '').trim()
   if (!content) return
@@ -61,13 +64,6 @@ const handleSubmit = (value) => {
 <template>
   <section class="chat-panel">
     <template v-if="conversation">
-      <header class="chat-panel__header">
-        <h2 class="chat-panel__title">{{ conversation.title }}</h2>
-        <span class="chat-panel__time">
-          最近更新：{{ formatFullTime(conversation.updatedAt) }}
-        </span>
-      </header>
-
       <main class="chat-panel__body" :class="{ 'is-chatting': hasMessages }">
         <div v-if="hasMessages" class="chat-panel__messages">
           <BubbleList
@@ -87,11 +83,12 @@ const handleSubmit = (value) => {
         >
           <Transition :name="welcomeTransitionName">
             <div v-if="!hasMessages" class="chat-panel__welcome">
-              <Welcome
-                title="开始新会话"
-                description="输入你的问题后发送，后续我们再补充联调细节与真实接口。"
-                variant="borderless"
-              />
+              <div class="chat-panel__welcome-card">
+                <p class="chat-panel__welcome-title">开始新会话</p>
+                <p class="chat-panel__welcome-description">
+                  输入APT问题，我们会为你分析
+                </p>
+              </div>
             </div>
           </Transition>
 
@@ -102,6 +99,20 @@ const handleSubmit = (value) => {
             :allow-speech="false"
             @submit="handleSubmit"
           />
+
+          <div v-if="!hasMessages" class="chat-panel__suggestions">
+            <p class="chat-panel__suggestions-title">猜你想问：</p>
+            <button
+              v-for="question in suggestedQuestions"
+              :key="question"
+              type="button"
+              class="chat-panel__suggestion-item"
+              :class="{ 'is-selected': inputText === question }"
+              @click="handleSuggestionPick(question)"
+            >
+              {{ question }}
+            </button>
+          </div>
         </div>
       </main>
     </template>
@@ -116,26 +127,6 @@ const handleSubmit = (value) => {
   display: flex;
   flex-direction: column;
   background-color: #fff;
-}
-
-.chat-panel__header {
-  border-bottom: 1px solid #ebeef5;
-  padding: 16px 20px;
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.chat-panel__title {
-  margin: 0;
-  font-size: 18px;
-  color: #1f2937;
-}
-
-.chat-panel__time {
-  color: #909399;
-  font-size: 12px;
 }
 
 .chat-panel__body {
@@ -179,6 +170,59 @@ const handleSubmit = (value) => {
   text-align: center;
 }
 
+.chat-panel__welcome-card {
+  margin-bottom: 6px;
+}
+
+.chat-panel__welcome-title {
+  margin: 0;
+  color: #303133;
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.chat-panel__welcome-description {
+  margin: 10px 0 0;
+  color: #606266;
+  font-size: 18px;
+  line-height: 1.6;
+}
+
+.chat-panel__suggestions {
+  text-align: left;
+  color: #606266;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.chat-panel__suggestions-title {
+  margin: 0;
+  color: #303133;
+  font-weight: 600;
+}
+
+.chat-panel__suggestion-item {
+  display: block;
+  width: 100%;
+  margin: 4px 0 0;
+  padding: 0;
+  text-align: left;
+  color: #606266;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.chat-panel__suggestion-item:hover {
+  color: #409eff;
+}
+
+.chat-panel__suggestion-item.is-selected {
+  color: #409eff;
+  font-weight: 600;
+}
+
 .chat-panel__composer.is-docked {
   top: auto;
   bottom: 16px;
@@ -202,3 +246,4 @@ const handleSubmit = (value) => {
   margin: auto;
 }
 </style>
+
