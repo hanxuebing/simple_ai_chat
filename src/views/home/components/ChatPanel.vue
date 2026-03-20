@@ -21,6 +21,8 @@ const bubbleList = computed(() =>
   })),
 )
 
+const hasMessages = computed(() => bubbleList.value.length > 0)
+
 const formatFullTime = (timestamp) => {
   if (!timestamp) return ''
   return new Date(timestamp).toLocaleString('zh-CN', {
@@ -47,33 +49,36 @@ const handleSubmit = (value) => {
         </span>
       </header>
 
-      <main class="chat-panel__body">
-        <BubbleList
-          v-if="bubbleList.length"
-          :list="bubbleList"
-          max-height="100%"
-          trigger-indices="only-last"
-          class="chat-panel__bubble-list"
-        />
+      <main class="chat-panel__body" :class="{ 'is-chatting': hasMessages }">
+        <div v-if="hasMessages" class="chat-panel__messages">
+          <BubbleList
+            :list="bubbleList"
+            max-height="100%"
+            trigger-indices="only-last"
+            class="chat-panel__bubble-list"
+          />
+        </div>
 
-        <div v-else class="chat-panel__welcome">
-          <Welcome
-            title="开始新会话"
-            description="输入你的问题后发送，后续我们再补充联调细节与真实接口。"
-            variant="borderless"
+        <div class="chat-panel__composer" :class="{ 'is-docked': hasMessages }">
+          <Transition name="chat-panel-intro">
+            <div v-if="!hasMessages" class="chat-panel__welcome">
+              <Welcome
+                title="开始新会话"
+                description="输入你的问题后发送，后续我们再补充联调细节与真实接口。"
+                variant="borderless"
+              />
+            </div>
+          </Transition>
+
+          <Sender
+            v-model="inputText"
+            :auto-size="{ minRows: 2, maxRows: 5 }"
+            placeholder="输入你的问题，回车发送"
+            :allow-speech="false"
+            @submit="handleSubmit"
           />
         </div>
       </main>
-
-      <footer class="chat-panel__footer">
-        <Sender
-          v-model="inputText"
-          :auto-size="{ minRows: 2, maxRows: 5 }"
-          placeholder="输入你的问题，回车发送"
-          :allow-speech="false"
-          @submit="handleSubmit"
-        />
-      </footer>
     </template>
 
     <ElEmpty v-else description="请先创建一个会话" class="chat-panel__empty" />
@@ -113,22 +118,56 @@ const handleSubmit = (value) => {
   min-height: 0;
   padding: 16px 20px;
   overflow: hidden;
+  position: relative;
+}
+
+.chat-panel__messages {
+  height: 100%;
+  padding-bottom: 112px;
 }
 
 .chat-panel__bubble-list {
   height: 100%;
 }
 
-.chat-panel__welcome {
-  height: 100%;
+.chat-panel__composer {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(820px, calc(100% - 40px));
+  transform: translate(-50%, -50%);
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
+  gap: 14px;
+  transition:
+    top 0.35s ease,
+    bottom 0.35s ease,
+    transform 0.35s ease;
 }
 
-.chat-panel__footer {
-  border-top: 1px solid #ebeef5;
-  padding: 12px 20px 16px;
+.chat-panel__welcome {
+  display: flex;
+  justify-content: center;
+  text-align: center;
+}
+
+.chat-panel__composer.is-docked {
+  top: auto;
+  bottom: 16px;
+  transform: translateX(-50%);
+}
+
+.chat-panel-intro-enter-active,
+.chat-panel-intro-leave-active {
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+
+.chat-panel-intro-enter-from,
+.chat-panel-intro-leave-to {
+  opacity: 0;
+  transform: translateY(8px);
 }
 
 .chat-panel__empty {
