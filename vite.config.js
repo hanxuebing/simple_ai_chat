@@ -22,7 +22,7 @@ export default defineConfig(({ mode }) => {
         resolvers: [ElementPlusResolver()],
         imports: ['vue', 'vue-router', 'pinia'],
         eslintrc: {
-          enabled: true,
+          enabled: false,
           filepath: './.eslintrc-auto-import.json',
         },
       }),
