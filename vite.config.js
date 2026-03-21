@@ -7,6 +7,8 @@ import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 import AutoImport from 'unplugin-auto-import/vite'
 import vueDevTools from 'vite-plugin-vue-devtools'
 import tailwindcss from '@tailwindcss/vite'
+import { mockDevServerPlugin } from 'vite-plugin-mock-dev-server'
+
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd())
@@ -28,13 +30,14 @@ export default defineConfig(({ mode }) => {
       }),
       tailwindcss(),
       vueDevTools(),
+      mockDevServerPlugin(),
     ],
     esbuild: {
       drop: ['console', 'debugger'],
     },
     resolve: {
       alias: {
-        '@': fileURLToPath(new URL('./src', import.meta.url))
+        '@': fileURLToPath(new URL('./src', import.meta.url)),
       },
     },
     server: {
