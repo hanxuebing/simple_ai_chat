@@ -13,7 +13,6 @@ const {
   selectConversation,
   submitMessage,
 } = useConversationManager()
-
 const isSidebarCollapsed = ref(false)
 </script>
 
@@ -31,10 +30,7 @@ const isSidebarCollapsed = ref(false)
     />
 
     <section class="home-layout__content">
-      <ChatPanel
-        :conversation="activeConversation"
-        @submit-message="submitMessage"
-      />
+      <ChatPanel :conversation="activeConversation" @submit-message="submitMessage" />
     </section>
   </main>
 </template>

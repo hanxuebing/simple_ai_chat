@@ -85,9 +85,7 @@ const handleSubmit = (value) => {
             <div v-if="!hasMessages" class="chat-panel__welcome">
               <div class="chat-panel__welcome-card">
                 <p class="chat-panel__welcome-title">开始新会话</p>
-                <p class="chat-panel__welcome-description">
-                  输入APT问题，我们会为你分析
-                </p>
+                <p class="chat-panel__welcome-description">输入APT问题，我们会为你分析</p>
               </div>
             </div>
           </Transition>
@@ -246,4 +244,3 @@ const handleSubmit = (value) => {
   margin: auto;
 }
 </style>
-

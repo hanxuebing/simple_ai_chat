@@ -34,15 +34,12 @@ export const useConversationManager = () => {
 
   const activeConversation = computed(
     () =>
-      conversations.value.find(
-        (conversation) => conversation.id === activeConversationId.value,
-      ) ?? null,
+      conversations.value.find((conversation) => conversation.id === activeConversationId.value) ??
+      null,
   )
 
   const moveToTop = (conversationId) => {
-    const currentIndex = conversations.value.findIndex(
-      (item) => item.id === conversationId,
-    )
+    const currentIndex = conversations.value.findIndex((item) => item.id === conversationId)
     if (currentIndex < 1) return
 
     const [targetConversation] = conversations.value.splice(currentIndex, 1)
@@ -70,9 +67,7 @@ export const useConversationManager = () => {
     const currentConversation = activeConversation.value
     if (!currentConversation) return
 
-    const hasUserMessage = currentConversation.messages.some(
-      (message) => message.role === 'user',
-    )
+    const hasUserMessage = currentConversation.messages.some((message) => message.role === 'user')
 
     currentConversation.messages.push({
       id: createId(),
@@ -99,4 +94,3 @@ export const useConversationManager = () => {
     submitMessage,
   }
 }
-
