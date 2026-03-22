@@ -16,6 +16,9 @@ const emit = defineEmits(['submitMessage'])
 
 const inputText = ref('')
 const enableComposerTransition = ref(false)
+const composerRef = ref(null)
+const composerHeight = ref(112)
+let composerResizeObserver = null
 
 const suggestedQuestions = [
   'APT 报告里最优先处理的风险点有哪些？',
@@ -27,10 +30,18 @@ const handleSuggestionPick = (question) => {
   inputText.value = question
 }
 
+const isPendingAssistantMessage = (message) =>
+  message.role === 'assistant' &&
+  Boolean(message.streaming) &&
+  !String(message.content ?? '').trim()
+
 const bubbleList = computed(() =>
   (props.conversation?.messages ?? []).map((message) => ({
-    content: message.content,
+    content: isPendingAssistantMessage(message) ? '正在生成中...' : message.content,
     placement: message.role === 'user' ? 'end' : 'start',
+    variant: message.role === 'user' ? 'filled' : 'borderless',
+    noStyle: !(message.role === 'user'),
+    loading: isPendingAssistantMessage(message),
     shape: 'round',
     isMarkdown: true,
   })),
@@ -41,6 +52,14 @@ const hasMessages = computed(() => bubbleList.value.length > 0)
 const welcomeTransitionName = computed(() =>
   enableComposerTransition.value ? 'chat-panel-intro' : '',
 )
+
+const messagesStyle = computed(() => ({
+  paddingBottom: `${composerHeight.value + 16}px`,
+}))
+
+const updateComposerHeight = () => {
+  composerHeight.value = composerRef.value?.offsetHeight ?? 112
+}
 
 watch(
   () => props.conversation?.id,
@@ -65,13 +84,43 @@ const handleSubmit = (value) => {
   emit('submitMessage', content)
   inputText.value = ''
 }
+
+onMounted(() => {
+  nextTick(updateComposerHeight)
+
+  composerResizeObserver = new ResizeObserver(() => {
+    updateComposerHeight()
+  })
+
+  if (composerRef.value) {
+    composerResizeObserver.observe(composerRef.value)
+  }
+})
+
+watch(
+  () => hasMessages.value,
+  async () => {
+    await nextTick()
+
+    if (!composerRef.value || !composerResizeObserver) return
+
+    composerResizeObserver.disconnect()
+    composerResizeObserver.observe(composerRef.value)
+    updateComposerHeight()
+  },
+  { flush: 'post' },
+)
+
+onBeforeUnmount(() => {
+  composerResizeObserver?.disconnect()
+})
 </script>
 
 <template>
   <section class="chat-panel">
     <template v-if="conversation">
       <main class="chat-panel__body" :class="{ 'is-chatting': hasMessages }">
-        <div v-if="hasMessages" class="chat-panel__messages">
+        <div v-if="hasMessages" class="chat-panel__messages" :style="messagesStyle">
           <BubbleList
             :list="bubbleList"
             max-height="100%"
@@ -81,6 +130,7 @@ const handleSubmit = (value) => {
         </div>
 
         <div
+          ref="composerRef"
           class="chat-panel__composer"
           :class="{
             'is-docked': hasMessages,
@@ -104,7 +154,7 @@ const handleSubmit = (value) => {
             @submit="handleSubmit"
           />
 
-          <p v-if="isStreaming" class="chat-panel__streaming-tip">正在接收流式返回...</p>
+          <!-- <p v-if="isStreaming" class="chat-panel__streaming-tip">正在接收流式返回...</p> -->
 
           <div v-if="!hasMessages" class="chat-panel__suggestions">
             <p class="chat-panel__suggestions-title">猜你想问：</p>
@@ -145,7 +195,6 @@ const handleSubmit = (value) => {
 
 .chat-panel__messages {
   height: 100%;
-  padding-bottom: 112px;
 }
 
 .chat-panel__bubble-list {
