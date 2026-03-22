@@ -1,4 +1,7 @@
+import { sendSseStream } from './useSseStream'
+
 const createId = () => `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+const STREAM_API_URL = import.meta.env.VITE_APP_BASE_API + '/chat/stream'
 
 const formatTitle = (content) => {
   const trimmed = content.trim()
@@ -18,6 +21,8 @@ export const useConversationManager = () => {
 
   const activeConversationId = ref(conversations.value[0]?.id ?? '')
   const searchKeyword = ref('')
+  const isStreaming = ref(false)
+  const streamAbortController = ref(null)
 
   const filteredConversations = computed(() => {
     const keyword = searchKeyword.value.trim().toLowerCase()
@@ -60,13 +65,51 @@ export const useConversationManager = () => {
     searchKeyword.value = keyword
   }
 
-  const submitMessage = (rawContent) => {
+  const getConversationById = (conversationId) =>
+    conversations.value.find((conversation) => conversation.id === conversationId) ?? null
+
+  const resolveStreamText = (payload) => {
+    if (typeof payload === 'string') return payload
+    if (!payload || typeof payload !== 'object') return ''
+    return (
+      payload.delta ??
+      payload.content ??
+      payload.message ??
+      payload.text ??
+      payload.answer ??
+      payload.token ??
+      ''
+    )
+  }
+
+  const finalizeAssistantMessage = ({ conversationId, assistantMessageId, fallbackText = '' }) => {
+    const conversation = getConversationById(conversationId)
+    if (!conversation) return
+
+    const assistantMessage = conversation.messages.find((item) => item.id === assistantMessageId)
+    if (!assistantMessage) return
+
+    if (!assistantMessage.content && fallbackText) {
+      assistantMessage.content = fallbackText
+    }
+
+    delete assistantMessage.streaming
+    conversation.updatedAt = Date.now()
+  }
+
+  const stopStreaming = () => {
+    streamAbortController.value?.abort()
+  }
+
+  const submitMessage = async (rawContent) => {
     const content = String(rawContent ?? '').trim()
     if (!content) return
+    if (isStreaming.value) return
 
     const currentConversation = activeConversation.value
     if (!currentConversation) return
 
+    const conversationId = currentConversation.id
     const hasUserMessage = currentConversation.messages.some((message) => message.role === 'user')
 
     currentConversation.messages.push({
@@ -80,7 +123,61 @@ export const useConversationManager = () => {
       currentConversation.title = formatTitle(content)
     }
 
-    moveToTop(currentConversation.id)
+    const assistantMessage = {
+      id: createId(),
+      role: 'assistant',
+      content: '',
+      streaming: true,
+    }
+    currentConversation.messages.push(assistantMessage)
+    moveToTop(conversationId)
+
+    isStreaming.value = true
+    streamAbortController.value = new AbortController()
+
+    try {
+      await sendSseStream({
+        url: STREAM_API_URL,
+        method: 'POST',
+        body: {
+          conversationId,
+          message: content,
+        },
+        signal: streamAbortController.value.signal,
+        onMessage: (payload) => {
+          const conversation = getConversationById(conversationId)
+          if (!conversation) return
+
+          const target = conversation.messages.find((item) => item.id === assistantMessage.id)
+          if (!target) return
+
+          if (typeof payload === 'object' && payload?.done) return
+          const chunk = resolveStreamText(payload)
+          if (!chunk) return
+
+          target.content += chunk
+          conversation.updatedAt = Date.now()
+        },
+      })
+
+      finalizeAssistantMessage({
+        conversationId,
+        assistantMessageId: assistantMessage.id,
+        fallbackText: '收到请求，但流式响应内容为空。',
+      })
+    } catch (error) {
+      const isAbortError = error?.name === 'AbortError'
+      finalizeAssistantMessage({
+        conversationId,
+        assistantMessageId: assistantMessage.id,
+        fallbackText: isAbortError
+          ? '流式请求已取消。'
+          : `流式请求失败：${error?.message || '未知错误'}`,
+      })
+    } finally {
+      isStreaming.value = false
+      streamAbortController.value = null
+    }
   }
 
   return {
@@ -92,5 +189,7 @@ export const useConversationManager = () => {
     createConversation,
     selectConversation,
     submitMessage,
+    stopStreaming,
+    isStreaming,
   }
 }

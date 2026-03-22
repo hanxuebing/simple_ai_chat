@@ -6,6 +6,10 @@ const props = defineProps({
     type: Object,
     default: null,
   },
+  isStreaming: {
+    type: Boolean,
+    default: false,
+  },
 })
 
 const emit = defineEmits(['submitMessage'])
@@ -27,8 +31,8 @@ const bubbleList = computed(() =>
   (props.conversation?.messages ?? []).map((message) => ({
     content: message.content,
     placement: message.role === 'user' ? 'end' : 'start',
-    variant: message.role === 'user' ? 'filled' : 'outlined',
     shape: 'round',
+    isMarkdown: true,
   })),
 )
 
@@ -48,6 +52,8 @@ watch(
 )
 
 const handleSubmit = (value) => {
+  if (props.isStreaming) return
+
   const content = String(value ?? inputText.value ?? '').trim()
   if (!content) return
 
@@ -93,10 +99,12 @@ const handleSubmit = (value) => {
           <Sender
             v-model="inputText"
             :auto-size="{ minRows: 2, maxRows: 5 }"
-            placeholder="输入你的问题，回车发送"
+            :placeholder="isStreaming ? '正在生成回答，请稍候...' : '输入你的问题，回车发送'"
             :allow-speech="false"
             @submit="handleSubmit"
           />
+
+          <p v-if="isStreaming" class="chat-panel__streaming-tip">正在接收流式返回...</p>
 
           <div v-if="!hasMessages" class="chat-panel__suggestions">
             <p class="chat-panel__suggestions-title">猜你想问：</p>
@@ -198,6 +206,12 @@ const handleSubmit = (value) => {
   margin: 0;
   color: #303133;
   font-weight: 600;
+}
+
+.chat-panel__streaming-tip {
+  margin: -4px 2px 0;
+  color: #909399;
+  font-size: 12px;
 }
 
 .chat-panel__suggestion-item {
