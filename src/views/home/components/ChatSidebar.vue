@@ -86,23 +86,46 @@ const handleSearchClick = () => {
 
     <ElScrollbar class="chat-sidebar__scroll" :class="{ 'is-hidden': props.collapsed }">
       <div class="chat-sidebar__list">
-        <button
+        <div
           v-for="conversation in conversations"
           :key="conversation.id"
-          type="button"
           class="chat-sidebar__item"
           :class="{
             'is-active': conversation.id === activeConversationId,
           }"
-          @click="emit('selectConversation', conversation.id)"
         >
-          <Typewriter
-            class="chat-sidebar__item-preview"
-            :content="getPreviewText(conversation)"
-            :typing="true"
-            :is-markdown="true"
-          />
-        </button>
+          <button
+            type="button"
+            class="chat-sidebar__item-main"
+            @click="emit('selectConversation', conversation.id)"
+          >
+            <Typewriter
+              class="chat-sidebar__item-preview"
+              :content="getPreviewText(conversation)"
+              :typing="true"
+              :is-markdown="true"
+            />
+          </button>
+
+          <ElPopover
+            trigger="click"
+            placement="bottom-end"
+            :width="180"
+            popper-class="chat-sidebar__item-menu-popper"
+          >
+            <template #reference>
+              <button
+                type="button"
+                class="chat-sidebar__item-menu-btn"
+                aria-label="会话菜单"
+                @click.stop
+              >
+                <span class="chat-sidebar__item-menu-icon" aria-hidden="true"></span>
+              </button>
+            </template>
+            <div class="chat-sidebar__item-menu-placeholder">菜单占位，后续补充</div>
+          </ElPopover>
+        </div>
 
         <ElEmpty
           v-if="!conversations.length"
@@ -226,13 +249,24 @@ const handleSearchClick = () => {
 
 .chat-sidebar__item {
   height: calc(var(--spacing) * 9);
+  background: transparent;
+  padding: 0 8px;
+  border-radius: 8px;
+  transition: background-color var(--sidebar-toggle-duration) ease;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.chat-sidebar__item-main {
+  height: 100%;
+  flex: 1;
+  min-width: 0;
   border: none;
   background: transparent;
   text-align: left;
-  padding: 7px 8px;
-  border-radius: 8px;
+  padding: 7px 0;
   cursor: pointer;
-  transition: background-color var(--sidebar-toggle-duration) ease;
   display: flex;
   align-items: center;
 }
@@ -263,6 +297,42 @@ const handleSearchClick = () => {
 
 .chat-sidebar__item-preview :deep(br) {
   display: none;
+}
+
+.chat-sidebar__item-menu-btn {
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.chat-sidebar__item-menu-btn:hover {
+  background-color: var(--menu-item-open);
+}
+
+.chat-sidebar__item-menu-icon {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background-color: #64748b;
+  box-shadow:
+    -6px 0 0 #64748b,
+    6px 0 0 #64748b;
+}
+
+.chat-sidebar__item-menu-placeholder {
+  font-size: 12px;
+  color: #64748b;
+}
+
+:deep(.chat-sidebar__item-menu-popper) {
+  padding: 8px 10px;
 }
 
 .chat-sidebar__toggle-btn {
