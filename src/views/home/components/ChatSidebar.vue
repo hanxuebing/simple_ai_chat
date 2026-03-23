@@ -1,4 +1,6 @@
 <script setup>
+import { Typewriter } from 'vue-element-plus-x'
+
 const props = defineProps({
   searchKeyword: {
     type: String,
@@ -25,15 +27,20 @@ const emit = defineEmits([
   'toggleSidebar',
 ])
 
+const normalizePreviewText = (text) =>
+  String(text ?? '')
+    .replace(/\s+/g, ' ')
+    .trim()
+
 const getPreviewText = (conversation) => {
   const messages = Array.isArray(conversation?.messages) ? conversation.messages : []
 
   for (let index = messages.length - 1; index >= 0; index -= 1) {
-    const content = String(messages[index]?.content ?? '').trim()
+    const content = normalizePreviewText(messages[index]?.content)
     if (content) return content
   }
 
-  return conversation?.title ?? '暂无消息'
+  return normalizePreviewText(conversation?.title) || '暂无消息'
 }
 
 const handleCreateConversation = () => {
@@ -89,7 +96,12 @@ const handleSearchClick = () => {
           }"
           @click="emit('selectConversation', conversation.id)"
         >
-          <span class="chat-sidebar__item-preview">{{ getPreviewText(conversation) }}</span>
+          <Typewriter
+            class="chat-sidebar__item-preview"
+            :content="getPreviewText(conversation)"
+            :typing="true"
+            :is-markdown="true"
+          />
         </button>
 
         <ElEmpty
@@ -230,6 +242,9 @@ const handleSearchClick = () => {
 }
 
 .chat-sidebar__item-preview {
+  display: block;
+  width: 100%;
+  min-width: 0;
   flex: 1;
   margin: 0;
   color: #334155;
@@ -237,6 +252,17 @@ const handleSearchClick = () => {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+
+.chat-sidebar__item-preview :deep(*) {
+  margin: 0;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.chat-sidebar__item-preview :deep(br) {
+  display: none;
 }
 
 .chat-sidebar__toggle-btn {
