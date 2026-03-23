@@ -65,16 +65,20 @@ export const sendSseStream = async ({
   if (apiKey) {
     defaultHeaders['x-api-key'] = apiKey
   }
-
-  const response = await fetch(url, {
+  const fetchOptions = {
     method,
     headers: {
       ...defaultHeaders,
       ...headers,
     },
-    body: body == null ? undefined : JSON.stringify(body),
     signal,
-  })
+  }
+
+  if (method === 'POST' && body != null) {
+    fetchOptions.body = JSON.stringify(body)
+  }
+
+  const response = await fetch(url, fetchOptions)
 
   if (!response.ok) {
     throw new Error(`Stream request failed (${response.status})`)
