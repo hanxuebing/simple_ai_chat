@@ -45,7 +45,7 @@ export default defineConfig(({ mode }) => {
       port: +env.VITE_APP_PORT,
       proxy: {
         // 代理 /dev-api 的请求
-        [env.VITE_APP_BASE_API]: {
+        [env.VITE_API_BASE_URL]: {
           target: env.VITE_APP_API_URL,
           // 修改代理服务器Origin为目标服务器target
           changeOrigin: true,
