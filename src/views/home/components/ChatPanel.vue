@@ -1,5 +1,5 @@
 <script setup>
-import { BubbleList, Sender } from 'vue-element-plus-x'
+import { Bubble, Sender } from 'vue-element-plus-x'
 
 const props = defineProps({
   conversation: {
@@ -17,6 +17,7 @@ const emit = defineEmits(['submitMessage'])
 const inputText = ref('')
 const enableComposerTransition = ref(false)
 const composerRef = ref(null)
+const messagesRef = ref(null)
 const composerHeight = ref(112)
 let composerResizeObserver = null
 
@@ -35,19 +36,34 @@ const isPendingAssistantMessage = (message) =>
   Boolean(message.streaming) &&
   !String(message.content ?? '').trim()
 
-const bubbleList = computed(() =>
-  (props.conversation?.messages ?? []).map((message) => ({
-    content: isPendingAssistantMessage(message) ? '正在生成中...' : message.content,
-    placement: message.role === 'user' ? 'end' : 'start',
-    variant: message.role === 'user' ? 'filled' : 'borderless',
-    noStyle: !(message.role === 'user'),
-    loading: isPendingAssistantMessage(message),
-    shape: 'round',
-    isMarkdown: true,
-  })),
-)
+const messages = computed(() => props.conversation?.messages ?? [])
 
-const hasMessages = computed(() => bubbleList.value.length > 0)
+const resolveMessageContent = (message) =>
+  isPendingAssistantMessage(message)
+    ? '正在生成中...'
+    : String(message.content ?? '')
+
+const getBubbleProps = (message) => ({
+  content: resolveMessageContent(message),
+  placement: message.role === 'user' ? 'end' : 'start',
+  variant: message.role === 'user' ? 'filled' : 'borderless',
+  noStyle: !(message.role === 'user'),
+  loading: isPendingAssistantMessage(message),
+  shape: 'round',
+  isMarkdown: true,
+})
+
+const getMessageKey = (message, index) =>
+  message.id ??
+  `${props.conversation?.id ?? 'draft'}-${message.role ?? 'unknown'}-${index}`
+
+const hasMessages = computed(() => messages.value.length > 0)
+
+const latestMessageDigest = computed(() => {
+  const latest = messages.value[messages.value.length - 1]
+  if (!latest) return ''
+  return `${latest.role}:${Number(Boolean(latest.streaming))}:${String(latest.content ?? '')}`
+})
 
 const welcomeTransitionName = computed(() =>
   enableComposerTransition.value ? 'chat-panel-intro' : '',
@@ -61,11 +77,21 @@ const updateComposerHeight = () => {
   composerHeight.value = composerRef.value?.offsetHeight ?? 112
 }
 
+const scrollMessagesToBottom = (behavior = 'auto') => {
+  if (!messagesRef.value) return
+  messagesRef.value.scrollTo({
+    top: messagesRef.value.scrollHeight,
+    behavior,
+  })
+}
+
 watch(
   () => props.conversation?.id,
-  () => {
+  async () => {
     // 切换/新建会话时回到初始态，不播放回弹动画。
     enableComposerTransition.value = false
+    await nextTick()
+    scrollMessagesToBottom()
   },
   { immediate: true },
 )
@@ -86,7 +112,10 @@ const handleSubmit = (value) => {
 }
 
 onMounted(() => {
-  nextTick(updateComposerHeight)
+  nextTick(() => {
+    updateComposerHeight()
+    scrollMessagesToBottom()
+  })
 
   composerResizeObserver = new ResizeObserver(() => {
     updateComposerHeight()
@@ -111,6 +140,15 @@ watch(
   { flush: 'post' },
 )
 
+watch(
+  () => latestMessageDigest.value,
+  async () => {
+    await nextTick()
+    scrollMessagesToBottom()
+  },
+  { flush: 'post' },
+)
+
 onBeforeUnmount(() => {
   composerResizeObserver?.disconnect()
 })
@@ -121,12 +159,13 @@ onBeforeUnmount(() => {
     <template v-if="conversation">
       <main class="chat-panel__body" :class="{ 'is-chatting': hasMessages }">
         <div v-if="hasMessages" class="chat-panel__messages" :style="messagesStyle">
-          <BubbleList
-            :list="bubbleList"
-            max-height="100%"
-            trigger-indices="only-last"
-            class="chat-panel__bubble-list"
-          />
+          <div ref="messagesRef" class="chat-panel__bubble-list">
+            <Bubble
+              v-for="(message, index) in messages"
+              :key="getMessageKey(message, index)"
+              v-bind="getBubbleProps(message)"
+            />
+          </div>
         </div>
 
         <div
@@ -195,10 +234,16 @@ onBeforeUnmount(() => {
 
 .chat-panel__messages {
   height: 100%;
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
 .chat-panel__bubble-list {
-  height: 100%;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 2px 0;
 }
 
 .chat-panel__composer {
