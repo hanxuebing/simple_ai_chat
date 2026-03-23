@@ -16,10 +16,7 @@ const emit = defineEmits(['submitMessage'])
 
 const inputText = ref('')
 const enableComposerTransition = ref(false)
-const composerRef = ref(null)
 const scrollContainerRef = ref(null)
-const composerHeight = ref(112)
-let composerResizeObserver = null
 
 const suggestedQuestions = [
   'APT 报告里最优先处理的风险点有哪些？',
@@ -66,14 +63,6 @@ const welcomeTransitionName = computed(() =>
   enableComposerTransition.value ? 'chat-panel-intro' : '',
 )
 
-const messagesStyle = computed(() => ({
-  paddingBottom: hasMessages.value ? '16px' : `${composerHeight.value + 16}px`,
-}))
-
-const updateComposerHeight = () => {
-  composerHeight.value = composerRef.value?.offsetHeight ?? 112
-}
-
 const scrollMessagesToBottom = (behavior = 'auto') => {
   if (!scrollContainerRef.value) return
   scrollContainerRef.value.scrollTo({
@@ -110,32 +99,9 @@ const handleSubmit = (value) => {
 
 onMounted(() => {
   nextTick(() => {
-    updateComposerHeight()
     scrollMessagesToBottom()
   })
-
-  composerResizeObserver = new ResizeObserver(() => {
-    updateComposerHeight()
-  })
-
-  if (composerRef.value) {
-    composerResizeObserver.observe(composerRef.value)
-  }
 })
-
-watch(
-  () => hasMessages.value,
-  async () => {
-    await nextTick()
-
-    if (!composerRef.value || !composerResizeObserver) return
-
-    composerResizeObserver.disconnect()
-    composerResizeObserver.observe(composerRef.value)
-    updateComposerHeight()
-  },
-  { flush: 'post' },
-)
 
 watch(
   () => latestMessageDigest.value,
@@ -145,22 +111,14 @@ watch(
   },
   { flush: 'post' },
 )
-
-onBeforeUnmount(() => {
-  composerResizeObserver?.disconnect()
-})
 </script>
 
 <template>
-  <section class="chat-panel">
+  <section ref="scrollContainerRef" class="chat-panel">
     <template v-if="conversation">
-      <main
-        ref="scrollContainerRef"
-        class="chat-panel__body"
-        :class="{ 'is-chatting': hasMessages }"
-      >
-        <div class="chat-panel__scroll-layer">
-          <div v-if="hasMessages" class="chat-panel__messages" :style="messagesStyle">
+      <main class="chat-panel__layout" :class="{ 'is-empty': !hasMessages }">
+        <section class="chat-panel__messages-section" :class="{ 'is-empty': !hasMessages }">
+          <div v-if="hasMessages" class="chat-panel__messages">
             <div class="chat-panel__bubble-list">
               <Bubble
                 v-for="(message, index) in messages"
@@ -169,14 +127,12 @@ onBeforeUnmount(() => {
               />
             </div>
           </div>
+        </section>
 
+        <section class="chat-panel__composer-section" :class="{ 'is-empty': !hasMessages }">
           <div
-            ref="composerRef"
             class="chat-panel__composer"
-            :class="{
-              'is-docked': hasMessages,
-              'with-transition': enableComposerTransition,
-            }"
+            :class="{ 'with-transition': enableComposerTransition }"
           >
             <Transition :name="welcomeTransitionName">
               <div v-if="!hasMessages" class="chat-panel__welcome">
@@ -211,7 +167,7 @@ onBeforeUnmount(() => {
               </button>
             </div>
           </div>
-        </div>
+        </section>
       </main>
     </template>
 
@@ -222,28 +178,41 @@ onBeforeUnmount(() => {
 <style scoped>
 .chat-panel {
   height: 100%;
-  display: flex;
-  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0 20px;
+  scrollbar-gutter: stable;
   background-color: #fff;
 }
 
-.chat-panel__body {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
-  position: relative;
-  padding: 16px 20px;
-  scrollbar-gutter: stable;
+.chat-panel__layout {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
-.chat-panel__scroll-layer {
-  position: relative;
-  min-height: 100%;
+.chat-panel__layout.is-empty {
+  min-height: max(100%, 640px);
+  justify-content: center;
+  padding: 16px 0;
+  gap: 20px;
+}
+
+.chat-panel__messages-section {
+  flex: 1;
+  min-height: 0;
+  padding-top: 16px;
+}
+
+.chat-panel__messages-section.is-empty {
+  flex: 0 0 auto;
+  min-height: 0;
+  padding-top: 0;
 }
 
 .chat-panel__messages {
-  min-height: 100%;
+  min-height: calc(100% - 16px);
 }
 
 .chat-panel__bubble-list {
@@ -253,24 +222,35 @@ onBeforeUnmount(() => {
   flex-direction: column;
   gap: 12px;
   padding: 2px 0;
+  padding-bottom: 100px;
+}
+
+.chat-panel__composer-section {
+  position: sticky;
+  bottom: 0;
+  z-index: 3;
+  padding-bottom: 32px;
+  background: #fff;
+  /* background: linear-gradient(to bottom, rgb(255 255 255 / 0%) 0%, #fff 34px); */
+}
+
+.chat-panel__composer-section.is-empty {
+  position: relative;
+  bottom: auto;
+  padding-bottom: 0;
+  background: transparent;
 }
 
 .chat-panel__composer {
-  position: absolute;
-  left: 50%;
-  top: 50%;
   width: min(820px, calc(100% - 40px));
-  transform: translate(-50%, -50%);
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: 14px;
 }
 
 .chat-panel__composer.with-transition {
-  transition:
-    top 0.35s ease,
-    bottom 0.35s ease,
-    transform 0.35s ease;
+  transition: transform 0.25s ease;
 }
 
 .chat-panel__welcome {
@@ -338,16 +318,6 @@ onBeforeUnmount(() => {
   font-weight: 600;
 }
 
-.chat-panel__composer.is-docked {
-  position: sticky;
-  left: auto;
-  top: auto;
-  bottom: 16px;
-  margin: 0 auto;
-  transform: none;
-  z-index: 2;
-}
-
 .chat-panel-intro-enter-active,
 .chat-panel-intro-leave-active {
   transition:
@@ -362,6 +332,32 @@ onBeforeUnmount(() => {
 }
 
 .chat-panel__empty {
-  margin: auto;
+  margin: 18vh auto 0;
+}
+
+@media (max-width: 768px) {
+  .chat-panel {
+    padding: 0 12px;
+  }
+
+  .chat-panel__layout.is-empty {
+    min-height: max(100%, 520px);
+    padding: 12px 0;
+    gap: 16px;
+  }
+
+  .chat-panel__bubble-list,
+  .chat-panel__composer {
+    width: 100%;
+  }
+
+  .chat-panel__composer-section {
+    bottom: 12px;
+    padding-bottom: 12px;
+  }
+
+  .chat-panel__composer-section.is-empty {
+    padding-bottom: 0;
+  }
 }
 </style>
