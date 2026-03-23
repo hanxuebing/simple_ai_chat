@@ -115,63 +115,59 @@ watch(
 
 <template>
   <section ref="scrollContainerRef" class="chat-panel">
-    <template v-if="conversation">
-      <main class="chat-panel__layout" :class="{ 'is-empty': !hasMessages }">
-        <section class="chat-panel__messages-section" :class="{ 'is-empty': !hasMessages }">
-          <div v-if="hasMessages" class="chat-panel__messages">
-            <div class="chat-panel__bubble-list">
-              <Bubble
-                v-for="(message, index) in messages"
-                :key="getMessageKey(message, index)"
-                v-bind="getBubbleProps(message)"
-              />
-            </div>
-          </div>
-        </section>
-
-        <section class="chat-panel__composer-section" :class="{ 'is-empty': !hasMessages }">
-          <div
-            class="chat-panel__composer"
-            :class="{ 'with-transition': enableComposerTransition }"
-          >
-            <Transition :name="welcomeTransitionName">
-              <div v-if="!hasMessages" class="chat-panel__welcome">
-                <div class="chat-panel__welcome-card">
-                  <p class="chat-panel__welcome-title">开始新会话</p>
-                  <p class="chat-panel__welcome-description">输入APT问题，我们会为你分析</p>
-                </div>
-              </div>
-            </Transition>
-
-            <Sender
-              v-model="inputText"
-              :auto-size="{ minRows: 2, maxRows: 5 }"
-              :placeholder="isStreaming ? '正在生成回答，请稍候...' : '输入你的问题，回车发送'"
-              :allow-speech="false"
-              @submit="handleSubmit"
+    <main class="chat-panel__layout" :class="{ 'is-empty': !hasMessages }">
+      <section class="chat-panel__messages-section" :class="{ 'is-empty': !hasMessages }">
+        <div v-if="hasMessages" class="chat-panel__messages">
+          <div class="chat-panel__bubble-list">
+            <Bubble
+              v-for="(message, index) in messages"
+              :key="getMessageKey(message, index)"
+              v-bind="getBubbleProps(message)"
             />
-
-            <!-- <p v-if="isStreaming" class="chat-panel__streaming-tip">正在接收流式返回...</p> -->
-
-            <div v-if="!hasMessages" class="chat-panel__suggestions">
-              <p class="chat-panel__suggestions-title">猜你想问：</p>
-              <button
-                v-for="question in suggestedQuestions"
-                :key="question"
-                type="button"
-                class="chat-panel__suggestion-item"
-                :class="{ 'is-selected': inputText === question }"
-                @click="handleSuggestionPick(question)"
-              >
-                {{ question }}
-              </button>
-            </div>
           </div>
-        </section>
-      </main>
-    </template>
+        </div>
+      </section>
 
-    <ElEmpty v-else description="请先创建一个会话" class="chat-panel__empty" />
+      <section class="chat-panel__composer-section" :class="{ 'is-empty': !hasMessages }">
+        <div
+          class="chat-panel__composer"
+          :class="{ 'with-transition': enableComposerTransition }"
+        >
+          <Transition :name="welcomeTransitionName">
+            <div v-if="!hasMessages" class="chat-panel__welcome">
+              <div class="chat-panel__welcome-card">
+                <p class="chat-panel__welcome-title">开始新会话</p>
+                <p class="chat-panel__welcome-description">输入APT问题，我们会为你分析</p>
+              </div>
+            </div>
+          </Transition>
+
+          <Sender
+            v-model="inputText"
+            :auto-size="{ minRows: 2, maxRows: 5 }"
+            :placeholder="isStreaming ? '正在生成回答，请稍候...' : '输入你的问题，回车发送'"
+            :allow-speech="false"
+            @submit="handleSubmit"
+          />
+
+          <!-- <p v-if="isStreaming" class="chat-panel__streaming-tip">正在接收流式返回...</p> -->
+
+          <div v-if="!hasMessages" class="chat-panel__suggestions">
+            <p class="chat-panel__suggestions-title">猜你想问：</p>
+            <button
+              v-for="question in suggestedQuestions"
+              :key="question"
+              type="button"
+              class="chat-panel__suggestion-item"
+              :class="{ 'is-selected': inputText === question }"
+              @click="handleSuggestionPick(question)"
+            >
+              {{ question }}
+            </button>
+          </div>
+        </div>
+      </section>
+    </main>
   </section>
 </template>
 
@@ -329,10 +325,6 @@ watch(
 .chat-panel-intro-leave-to {
   opacity: 0;
   transform: translateY(8px);
-}
-
-.chat-panel__empty {
-  margin: 18vh auto 0;
 }
 
 @media (max-width: 768px) {
