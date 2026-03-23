@@ -26,8 +26,14 @@ const emit = defineEmits([
 ])
 
 const getPreviewText = (conversation) => {
-  const lastMessage = conversation.messages.at(-1)
-  return lastMessage?.content ?? '暂无消息'
+  const messages = Array.isArray(conversation?.messages) ? conversation.messages : []
+
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const content = String(messages[index]?.content ?? '').trim()
+    if (content) return content
+  }
+
+  return conversation?.title ?? '暂无消息'
 }
 
 const handleCreateConversation = () => {
@@ -86,7 +92,11 @@ const handleSearchClick = () => {
           <span class="chat-sidebar__item-preview">{{ getPreviewText(conversation) }}</span>
         </button>
 
-        <ElEmpty v-if="!conversations.length" description="暂无会话" :image-size="56" />
+        <ElEmpty
+          v-if="!conversations.length"
+          description="暂无会话，发送首条问题后自动创建"
+          :image-size="56"
+        />
       </div>
     </ElScrollbar>
 
