@@ -171,8 +171,8 @@ export const useConversationManager = () => {
         conversationId,
         assistantMessageId: assistantMessage.id,
         fallbackText: isAbortError
-          ? '流式请求已取消。'
-          : `流式请求失败：${error?.message || '未知错误'}`,
+          ? '请求已取消。'
+          : `请求失败：${error?.message || '未知错误'}`,
       })
     } finally {
       isStreaming.value = false
