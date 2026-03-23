@@ -10,9 +10,9 @@ const request = axios.create({
 
 request.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token')
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
+    const apiKey = localStorage.getItem('x-api-key')
+    if (apiKey) {
+      config.headers['x-api-key'] = apiKey
     }
     return config
   },
