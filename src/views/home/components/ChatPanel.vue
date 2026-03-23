@@ -17,7 +17,7 @@ const emit = defineEmits(['submitMessage'])
 const inputText = ref('')
 const enableComposerTransition = ref(false)
 const composerRef = ref(null)
-const messagesRef = ref(null)
+const scrollContainerRef = ref(null)
 const composerHeight = ref(112)
 let composerResizeObserver = null
 
@@ -39,9 +39,7 @@ const isPendingAssistantMessage = (message) =>
 const messages = computed(() => props.conversation?.messages ?? [])
 
 const resolveMessageContent = (message) =>
-  isPendingAssistantMessage(message)
-    ? '正在生成中...'
-    : String(message.content ?? '')
+  isPendingAssistantMessage(message) ? '正在生成中...' : String(message.content ?? '')
 
 const getBubbleProps = (message) => ({
   content: resolveMessageContent(message),
@@ -54,8 +52,7 @@ const getBubbleProps = (message) => ({
 })
 
 const getMessageKey = (message, index) =>
-  message.id ??
-  `${props.conversation?.id ?? 'draft'}-${message.role ?? 'unknown'}-${index}`
+  message.id ?? `${props.conversation?.id ?? 'draft'}-${message.role ?? 'unknown'}-${index}`
 
 const hasMessages = computed(() => messages.value.length > 0)
 
@@ -70,7 +67,7 @@ const welcomeTransitionName = computed(() =>
 )
 
 const messagesStyle = computed(() => ({
-  paddingBottom: `${composerHeight.value + 16}px`,
+  paddingBottom: hasMessages.value ? '16px' : `${composerHeight.value + 16}px`,
 }))
 
 const updateComposerHeight = () => {
@@ -78,9 +75,9 @@ const updateComposerHeight = () => {
 }
 
 const scrollMessagesToBottom = (behavior = 'auto') => {
-  if (!messagesRef.value) return
-  messagesRef.value.scrollTo({
-    top: messagesRef.value.scrollHeight,
+  if (!scrollContainerRef.value) return
+  scrollContainerRef.value.scrollTo({
+    top: scrollContainerRef.value.scrollHeight,
     behavior,
   })
 }
@@ -157,56 +154,62 @@ onBeforeUnmount(() => {
 <template>
   <section class="chat-panel">
     <template v-if="conversation">
-      <main class="chat-panel__body" :class="{ 'is-chatting': hasMessages }">
-        <div v-if="hasMessages" class="chat-panel__messages" :style="messagesStyle">
-          <div ref="messagesRef" class="chat-panel__bubble-list">
-            <Bubble
-              v-for="(message, index) in messages"
-              :key="getMessageKey(message, index)"
-              v-bind="getBubbleProps(message)"
-            />
-          </div>
-        </div>
-
-        <div
-          ref="composerRef"
-          class="chat-panel__composer"
-          :class="{
-            'is-docked': hasMessages,
-            'with-transition': enableComposerTransition,
-          }"
-        >
-          <Transition :name="welcomeTransitionName">
-            <div v-if="!hasMessages" class="chat-panel__welcome">
-              <div class="chat-panel__welcome-card">
-                <p class="chat-panel__welcome-title">开始新会话</p>
-                <p class="chat-panel__welcome-description">输入APT问题，我们会为你分析</p>
-              </div>
+      <main
+        ref="scrollContainerRef"
+        class="chat-panel__body"
+        :class="{ 'is-chatting': hasMessages }"
+      >
+        <div class="chat-panel__scroll-layer">
+          <div v-if="hasMessages" class="chat-panel__messages" :style="messagesStyle">
+            <div class="chat-panel__bubble-list">
+              <Bubble
+                v-for="(message, index) in messages"
+                :key="getMessageKey(message, index)"
+                v-bind="getBubbleProps(message)"
+              />
             </div>
-          </Transition>
+          </div>
 
-          <Sender
-            v-model="inputText"
-            :auto-size="{ minRows: 2, maxRows: 5 }"
-            :placeholder="isStreaming ? '正在生成回答，请稍候...' : '输入你的问题，回车发送'"
-            :allow-speech="false"
-            @submit="handleSubmit"
-          />
+          <div
+            ref="composerRef"
+            class="chat-panel__composer"
+            :class="{
+              'is-docked': hasMessages,
+              'with-transition': enableComposerTransition,
+            }"
+          >
+            <Transition :name="welcomeTransitionName">
+              <div v-if="!hasMessages" class="chat-panel__welcome">
+                <div class="chat-panel__welcome-card">
+                  <p class="chat-panel__welcome-title">开始新会话</p>
+                  <p class="chat-panel__welcome-description">输入APT问题，我们会为你分析</p>
+                </div>
+              </div>
+            </Transition>
 
-          <!-- <p v-if="isStreaming" class="chat-panel__streaming-tip">正在接收流式返回...</p> -->
+            <Sender
+              v-model="inputText"
+              :auto-size="{ minRows: 2, maxRows: 5 }"
+              :placeholder="isStreaming ? '正在生成回答，请稍候...' : '输入你的问题，回车发送'"
+              :allow-speech="false"
+              @submit="handleSubmit"
+            />
 
-          <div v-if="!hasMessages" class="chat-panel__suggestions">
-            <p class="chat-panel__suggestions-title">猜你想问：</p>
-            <button
-              v-for="question in suggestedQuestions"
-              :key="question"
-              type="button"
-              class="chat-panel__suggestion-item"
-              :class="{ 'is-selected': inputText === question }"
-              @click="handleSuggestionPick(question)"
-            >
-              {{ question }}
-            </button>
+            <!-- <p v-if="isStreaming" class="chat-panel__streaming-tip">正在接收流式返回...</p> -->
+
+            <div v-if="!hasMessages" class="chat-panel__suggestions">
+              <p class="chat-panel__suggestions-title">猜你想问：</p>
+              <button
+                v-for="question in suggestedQuestions"
+                :key="question"
+                type="button"
+                class="chat-panel__suggestion-item"
+                :class="{ 'is-selected': inputText === question }"
+                @click="handleSuggestionPick(question)"
+              >
+                {{ question }}
+              </button>
+            </div>
           </div>
         </div>
       </main>
@@ -227,19 +230,25 @@ onBeforeUnmount(() => {
 .chat-panel__body {
   flex: 1;
   min-height: 0;
-  padding: 16px 20px;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   position: relative;
+  padding: 16px 20px;
+  scrollbar-gutter: stable;
+}
+
+.chat-panel__scroll-layer {
+  position: relative;
+  min-height: 100%;
 }
 
 .chat-panel__messages {
-  height: 100%;
-  overflow-y: auto;
-  padding-right: 4px;
+  min-height: 100%;
 }
 
 .chat-panel__bubble-list {
-  min-height: 100%;
+  width: min(820px, calc(100% - 40px));
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -330,9 +339,13 @@ onBeforeUnmount(() => {
 }
 
 .chat-panel__composer.is-docked {
+  position: sticky;
+  left: auto;
   top: auto;
   bottom: 16px;
-  transform: translateX(-50%);
+  margin: 0 auto;
+  transform: none;
+  z-index: 2;
 }
 
 .chat-panel-intro-enter-active,
