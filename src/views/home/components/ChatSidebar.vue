@@ -109,8 +109,9 @@ const handleSearchClick = () => {
 
           <ElPopover
             trigger="click"
-            placement="bottom-end"
-            :width="180"
+            placement="bottom-start"
+            :width="200"
+            :show-arrow="false"
             popper-class="chat-sidebar__item-menu-popper"
           >
             <template #reference>
