@@ -88,7 +88,7 @@ const handleDeleteConversation = async (conversation) => {
         :aria-label="props.collapsed ? '新聊天' : undefined"
         @click="handleCreateConversation"
       >
-        <span class="chat-sidebar__menu-icon" aria-hidden="true"></span>
+        <el-icon size="16"><i-ep-EditPen /></el-icon>
         <span v-if="!props.collapsed">新聊天</span>
       </button>
 
@@ -99,7 +99,7 @@ const handleDeleteConversation = async (conversation) => {
         :aria-label="props.collapsed ? '搜索' : undefined"
         @click="handleSearchClick"
       >
-        <span class="chat-sidebar__menu-icon" aria-hidden="true"></span>
+        <el-icon size="16"><i-ep-Search /></el-icon>
         <span v-if="!props.collapsed">搜索</span>
       </button>
     </header>
