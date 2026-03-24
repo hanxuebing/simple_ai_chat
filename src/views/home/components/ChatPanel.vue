@@ -271,13 +271,15 @@ watch(
   text-align: left;
   color: #606266;
   font-size: 14px;
-  line-height: 1.6;
+  line-height: 1.7;
 }
 
 .chat-panel__suggestions-title {
-  margin: 0;
+  margin: 0 0 8px;
   color: #303133;
   font-weight: 600;
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 .chat-panel__streaming-tip {
@@ -289,21 +291,32 @@ watch(
 .chat-panel__suggestion-item {
   display: block;
   width: 100%;
-  margin: 4px 0 0;
-  padding: 0;
+  margin: 0 0 8px;
+  padding: 8px 12px;
   text-align: left;
-  color: #606266;
-  background: transparent;
-  border: 0;
+  font-size: 13px;
+  line-height: 1.65;
+  color: #4e5969;
+  background: #f5f7fa;
+  border: 1px solid transparent;
+  border-radius: 10px;
   cursor: pointer;
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .chat-panel__suggestion-item:hover {
   color: #409eff;
+  background: #edf5ff;
+  border-color: #d9ecff;
 }
 
 .chat-panel__suggestion-item.is-selected {
   color: #409eff;
+  background: #ecf5ff;
+  border-color: #b3d8ff;
   font-weight: 600;
 }
 
@@ -346,5 +359,7 @@ watch(
   }
 }
 </style>
+
+
 
 
