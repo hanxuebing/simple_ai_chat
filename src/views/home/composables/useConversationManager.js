@@ -225,8 +225,8 @@ export const useConversationManager = () => {
         return
       }
 
-      activeConversationId.value = conversations.value[0].id
-      await loadConversationDetail(activeConversationId.value)
+      // 首页初始化保持“新会话”草稿态，不默认选中历史会话。
+      startDraftConversation()
     } catch {
       conversations.value = []
       startDraftConversation()
