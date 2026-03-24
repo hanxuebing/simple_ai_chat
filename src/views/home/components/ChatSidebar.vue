@@ -52,17 +52,9 @@ const getConversationTitle = (conversation) => {
 
 const handleCreateConversation = () => {
   emit('createConversation')
-
-  if (props.collapsed) {
-    emit('toggleSidebar')
-  }
 }
 
-const handleSearchClick = () => {
-  if (props.collapsed) {
-    emit('toggleSidebar')
-  }
-}
+const handleSearchClick = () => null
 
 const handleDeleteConversation = async (conversation) => {
   try {
@@ -403,8 +395,23 @@ const handleDeleteConversation = async (conversation) => {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity var(--sidebar-toggle-duration) ease,
+    visibility 0s linear var(--sidebar-toggle-duration);
 }
 
+.chat-sidebar__item:hover .chat-sidebar__item-menu-btn,
+.chat-sidebar__item:focus-within .chat-sidebar__item-menu-btn {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition:
+    opacity var(--sidebar-toggle-duration) ease,
+    visibility 0s linear 0s;
+}
 .chat-sidebar__item-menu-btn:hover {
   background-color: var(--menu-item-open);
 }
@@ -463,3 +470,4 @@ const handleDeleteConversation = async (conversation) => {
   padding-bottom: 0;
 }
 </style>
+
