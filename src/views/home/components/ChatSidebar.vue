@@ -84,7 +84,12 @@ const handleDeleteConversation = async (conversation) => {
         :aria-label="props.collapsed ? '展开侧栏' : '收起侧栏'"
         @click="emit('toggleSidebar')"
       >
-        <img class="chat-sidebar__top-toggle-icon" :src="closeSidebarIcon" alt="" aria-hidden="true" />
+        <img
+          class="chat-sidebar__top-toggle-icon"
+          :src="closeSidebarIcon"
+          alt=""
+          aria-hidden="true"
+        />
       </button>
     </div>
 
@@ -108,7 +113,7 @@ const handleDeleteConversation = async (conversation) => {
         @click="handleSearchClick"
       >
         <el-icon size="16"><i-ep-Search /></el-icon>
-        <span v-if="!props.collapsed">搜索</span>
+        <span v-if="!props.collapsed">搜索（不支持）</span>
       </button>
     </header>
 
@@ -471,5 +476,3 @@ const handleDeleteConversation = async (conversation) => {
   padding-bottom: 0;
 }
 </style>
-
-
