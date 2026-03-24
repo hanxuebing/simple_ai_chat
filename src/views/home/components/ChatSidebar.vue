@@ -442,5 +442,3 @@ const handleDeleteConversation = async (conversation) => {
   transform: rotate(45deg);
 }
 </style>
-
-
