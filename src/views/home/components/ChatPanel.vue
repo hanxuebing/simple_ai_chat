@@ -129,10 +129,7 @@ watch(
       </section>
 
       <section class="chat-panel__composer-section" :class="{ 'is-empty': !hasMessages }">
-        <div
-          class="chat-panel__composer"
-          :class="{ 'with-transition': enableComposerTransition }"
-        >
+        <div class="chat-panel__composer" :class="{ 'with-transition': enableComposerTransition }">
           <Transition :name="welcomeTransitionName">
             <div v-if="!hasMessages" class="chat-panel__welcome">
               <div class="chat-panel__welcome-card">
