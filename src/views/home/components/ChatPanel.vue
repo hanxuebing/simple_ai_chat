@@ -19,9 +19,9 @@ const enableComposerTransition = ref(false)
 const scrollContainerRef = ref(null)
 
 const suggestedQuestions = [
-  'APT 报告里最优先处理的风险点有哪些？',
-  '这次告警和历史事件相比有什么异常趋势？',
-  '如果今天要联调接口，最小可验证流程是什么？',
+  'T1059.001是什么技术？',
+  'APT28在2024年的攻击活动报告摘要',
+  'Lazarus Group和Hidden Cobra是同一个组织吗？',
 ]
 
 const handleSuggestionPick = (question) => {
