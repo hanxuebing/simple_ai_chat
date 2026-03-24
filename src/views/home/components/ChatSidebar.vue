@@ -1,6 +1,8 @@
 <script setup>
 // import { ElMessageBox } from 'element-plus'
 import { Typewriter } from 'vue-element-plus-x'
+import logoIcon from '@/assets/icons/logo.svg'
+import closeSidebarIcon from '@/assets/icons/flowbite--close-sidebar-outline.svg'
 
 const props = defineProps({
   searchKeyword: {
@@ -80,6 +82,20 @@ const handleDeleteConversation = async (conversation) => {
 
 <template>
   <aside class="chat-sidebar text-size-14" :class="{ 'is-collapsed': props.collapsed }">
+    <div class="chat-sidebar__top" :class="{ 'is-collapsed': props.collapsed }">
+      <img v-if="!props.collapsed" class="chat-sidebar__logo" :src="logoIcon" alt="Logo" />
+
+      <button
+        type="button"
+        class="chat-sidebar__top-toggle-btn"
+        :class="{ 'is-collapsed': props.collapsed }"
+        :aria-label="props.collapsed ? '展开侧栏' : '收起侧栏'"
+        @click="emit('toggleSidebar')"
+      >
+        <img class="chat-sidebar__top-toggle-icon" :src="closeSidebarIcon" alt="" aria-hidden="true" />
+      </button>
+    </div>
+
     <header class="chat-sidebar__header">
       <button
         type="button"
@@ -164,16 +180,6 @@ const handleDeleteConversation = async (conversation) => {
     </ElScrollbar>
 
     <div class="chat-sidebar__version" :class="{ 'is-collapsed': props.collapsed }">v0.0.1</div>
-
-    <button
-      type="button"
-      class="chat-sidebar__toggle-btn"
-      :class="{ 'is-collapsed': props.collapsed }"
-      :aria-label="props.collapsed ? '展开侧栏' : '收起侧栏'"
-      @click="emit('toggleSidebar')"
-    >
-      <span class="chat-sidebar__toggle-icon" aria-hidden="true"></span>
-    </button>
   </aside>
 </template>
 
@@ -193,6 +199,63 @@ const handleDeleteConversation = async (conversation) => {
 .chat-sidebar.is-collapsed {
   width: var(--sidebar-collapsed-width);
   min-width: var(--sidebar-collapsed-width);
+}
+
+.chat-sidebar__top {
+  height: calc(var(--spacing) * 11);
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border-bottom: 1px solid #eceff5;
+  transition: padding var(--sidebar-toggle-duration) ease;
+}
+
+.chat-sidebar__top.is-collapsed {
+  padding: 10px 8px;
+  justify-content: center;
+}
+
+.chat-sidebar__logo {
+  height: 20px;
+  width: auto;
+  max-width: 120px;
+  object-fit: contain;
+}
+
+.chat-sidebar__top-toggle-btn {
+  width: 28px;
+  height: 28px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background-color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition:
+    background-color var(--sidebar-toggle-duration) ease,
+    border-color var(--sidebar-toggle-duration) ease,
+    transform var(--sidebar-toggle-duration) ease;
+}
+
+.chat-sidebar__top-toggle-btn:hover {
+  background-color: var(--menu-item-highlighted);
+}
+
+.chat-sidebar__top-toggle-btn:active {
+  background-color: var(--menu-item-open);
+}
+
+.chat-sidebar__top-toggle-btn.is-collapsed {
+  transform: rotate(180deg);
+}
+
+.chat-sidebar__top-toggle-icon {
+  width: 16px;
+  height: 16px;
 }
 
 .chat-sidebar__header {
@@ -398,47 +461,5 @@ const handleDeleteConversation = async (conversation) => {
   pointer-events: none;
   padding-top: 0;
   padding-bottom: 0;
-}
-
-.chat-sidebar__toggle-btn {
-  position: absolute;
-  top: 12px;
-  right: -14px;
-  width: 28px;
-  height: 28px;
-  border: 1px solid #e5e7eb;
-  border-radius: 999px;
-  background-color: #fff;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
-  transition:
-    background-color var(--sidebar-toggle-duration) ease,
-    border-color var(--sidebar-toggle-duration) ease,
-    box-shadow var(--sidebar-toggle-duration) ease;
-  z-index: 2;
-}
-
-.chat-sidebar__toggle-btn:hover {
-  background-color: var(--menu-item-highlighted);
-}
-
-.chat-sidebar__toggle-btn:active {
-  background-color: var(--menu-item-open);
-}
-
-.chat-sidebar__toggle-icon {
-  width: 8px;
-  height: 8px;
-  border-top: 1.5px solid #6b7280;
-  border-right: 1.5px solid #6b7280;
-  transform: rotate(-135deg);
-  transition: transform var(--sidebar-toggle-duration) ease;
-}
-
-.chat-sidebar__toggle-btn.is-collapsed .chat-sidebar__toggle-icon {
-  transform: rotate(45deg);
 }
 </style>
