@@ -32,11 +32,14 @@ const normalizePreviewText = (text) =>
     .replace(/\s+/g, ' ')
     .trim()
 
-const getPreviewText = (conversation) => {
+const getConversationTitle = (conversation) => {
   const messages = Array.isArray(conversation?.messages) ? conversation.messages : []
 
-  for (let index = messages.length - 1; index >= 0; index -= 1) {
-    const content = normalizePreviewText(messages[index]?.content)
+  for (let index = 0; index < messages.length; index += 1) {
+    const message = messages[index]
+    if (message?.role !== 'user') continue
+
+    const content = normalizePreviewText(message?.content)
     if (content) return content
   }
 
@@ -101,7 +104,7 @@ const handleSearchClick = () => {
           >
             <Typewriter
               class="chat-sidebar__item-preview"
-              :content="getPreviewText(conversation)"
+              :content="getConversationTitle(conversation)"
               :typing="true"
               :is-markdown="true"
             />
@@ -378,3 +381,4 @@ const handleSearchClick = () => {
   transform: rotate(45deg);
 }
 </style>
+
