@@ -52,6 +52,7 @@ const getMessageKey = (message, index) =>
   message.id ?? `${props.conversation?.id ?? 'draft'}-${message.role ?? 'unknown'}-${index}`
 
 const hasMessages = computed(() => messages.value.length > 0)
+const senderLoading = computed(() => props.isStreaming)
 
 const latestMessageDigest = computed(() => {
   const latest = messages.value[messages.value.length - 1]
@@ -142,6 +143,7 @@ watch(
           <Sender
             v-model="inputText"
             :auto-size="{ minRows: 2, maxRows: 5 }"
+            :loading="senderLoading"
             :placeholder="isStreaming ? '正在生成回答，请稍候...' : '输入你的问题，回车发送'"
             :allow-speech="false"
             @submit="handleSubmit"
