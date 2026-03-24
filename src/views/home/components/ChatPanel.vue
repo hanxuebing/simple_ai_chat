@@ -43,6 +43,7 @@ const getBubbleProps = (message) => ({
   placement: message.role === 'user' ? 'end' : 'start',
   variant: message.role === 'user' ? 'filled' : 'borderless',
   noStyle: !(message.role === 'user'),
+  maxWidth: '100%',
   loading: isPendingAssistantMessage(message),
   shape: 'round',
   isMarkdown: true,
@@ -352,3 +353,4 @@ watch(
   }
 }
 </style>
+
