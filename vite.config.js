@@ -2,11 +2,13 @@ import { fileURLToPath, URL } from 'node:url'
 
 import { loadEnv, defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import Components from 'unplugin-vue-components/vite'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
+import Components from 'unplugin-vue-components/vite'
 import AutoImport from 'unplugin-auto-import/vite'
 import vueDevTools from 'vite-plugin-vue-devtools'
 import tailwindcss from '@tailwindcss/vite'
+import Icons from 'unplugin-icons/vite'
+import IconsResolver from 'unplugin-icons/resolver'
 import { mockDevServerPlugin } from 'vite-plugin-mock-dev-server'
 
 // https://vite.dev/config/
@@ -17,7 +19,12 @@ export default defineConfig(({ mode }) => {
       vue(),
       Components({
         globs: ['!src/components/**/*.vue'],
-        resolvers: [ElementPlusResolver()],
+        resolvers: [
+          ElementPlusResolver(),
+          IconsResolver({
+            enabledCollections: ['ep']
+          })
+        ],
       }),
       AutoImport({
         ignore: ['src/components/**'],
@@ -27,6 +34,9 @@ export default defineConfig(({ mode }) => {
           enabled: false,
           filepath: './.eslintrc-auto-import.json',
         },
+      }),
+      Icons({
+        autoInstall: true
       }),
       tailwindcss(),
       vueDevTools(),
