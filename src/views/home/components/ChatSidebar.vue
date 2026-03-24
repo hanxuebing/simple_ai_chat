@@ -150,7 +150,9 @@ const handleDeleteConversation = async (conversation) => {
                 aria-label="会话菜单"
                 @click.stop
               >
-                <span class="chat-sidebar__item-menu-icon" aria-hidden="true"></span>
+                <el-icon class="chat-sidebar__item-menu-icon" size="16">
+                  <i-ep-MoreFilled />
+                </el-icon>
               </button>
             </template>
             <button
@@ -412,18 +414,17 @@ const handleDeleteConversation = async (conversation) => {
     opacity var(--sidebar-toggle-duration) ease,
     visibility 0s linear 0s;
 }
-.chat-sidebar__item-menu-btn:hover {
-  background-color: var(--menu-item-open);
+.chat-sidebar__item-menu-btn:hover .chat-sidebar__item-menu-icon,
+.chat-sidebar__item-menu-btn:focus-visible .chat-sidebar__item-menu-icon {
+  color: #334155;
 }
-
 .chat-sidebar__item-menu-icon {
-  width: 3px;
-  height: 3px;
-  border-radius: 50%;
-  background-color: #64748b;
-  box-shadow:
-    -6px 0 0 #64748b,
-    6px 0 0 #64748b;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  line-height: 1;
+  transition: color var(--sidebar-toggle-duration) ease;
 }
 
 .chat-sidebar__item-menu-action {
@@ -470,4 +471,5 @@ const handleDeleteConversation = async (conversation) => {
   padding-bottom: 0;
 }
 </style>
+
 
