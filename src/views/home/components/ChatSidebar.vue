@@ -163,6 +163,8 @@ const handleDeleteConversation = async (conversation) => {
       </div>
     </ElScrollbar>
 
+    <div class="chat-sidebar__version" :class="{ 'is-collapsed': props.collapsed }">v0.0.1</div>
+
     <button
       type="button"
       class="chat-sidebar__toggle-btn"
@@ -379,6 +381,25 @@ const handleDeleteConversation = async (conversation) => {
   padding: 8px 10px;
 }
 
+.chat-sidebar__version {
+  padding: 6px 12px 10px;
+  font-size: 12px;
+  line-height: 1;
+  color: #94a3b8;
+  text-align: left;
+  user-select: none;
+  transition:
+    opacity var(--sidebar-toggle-duration) ease,
+    padding var(--sidebar-toggle-duration) ease;
+}
+
+.chat-sidebar__version.is-collapsed {
+  opacity: 0;
+  pointer-events: none;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
 .chat-sidebar__toggle-btn {
   position: absolute;
   top: 12px;
@@ -421,3 +442,5 @@ const handleDeleteConversation = async (conversation) => {
   transform: rotate(45deg);
 }
 </style>
+
+
