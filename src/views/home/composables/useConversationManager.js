@@ -1,17 +1,20 @@
 import { getConversationDetailApi, getConversationsListApi } from '@/api/conversations'
 import { sendSseStream } from './useSseStream'
 
+// 生成前端侧临时 ID（草稿消息、未持久化会话等）。
 const createId = () => `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
 const STREAM_API_URL = import.meta.env.VITE_API_BASE_URL + '/chat/stream'
 const DEFAULT_CONVERSATION_TITLE = '新聊天'
 const TITLE_FROM_ASSISTANT_MIN_LENGTH = 20
 
+// 截断标题，避免侧栏显示过长。
 const formatTitle = (content) => {
   const trimmed = content.trim()
   if (!trimmed) return DEFAULT_CONVERSATION_TITLE
   return trimmed.length > 14 ? `${trimmed.slice(0, 14)}...` : trimmed
 }
 
+// 统一将接口字段转换为时间戳，失败时回退到当前时间。
 const toTimestamp = (value) => {
   if (typeof value === 'number' && Number.isFinite(value)) return value
   if (typeof value === 'string' && value.trim()) {
@@ -21,6 +24,7 @@ const toTimestamp = (value) => {
   return Date.now()
 }
 
+// 统一消息结构，兼容不同接口字段命名。
 const buildMessage = (message = {}) => ({
   id: message.id ?? message.message_id ?? createId(),
   role: message.role ?? 'assistant',
@@ -29,6 +33,7 @@ const buildMessage = (message = {}) => ({
   streaming: Boolean(message.streaming),
 })
 
+// 统一会话结构，确保列表、详情、草稿都能走同一套渲染逻辑。
 const buildConversation = (conversation = {}) => {
   const id = String(conversation.id ?? conversation.session_id ?? conversation.sessionId ?? createId())
   const sessionId = String(conversation.sessionId ?? conversation.session_id ?? id ?? '')
@@ -49,6 +54,7 @@ const buildConversation = (conversation = {}) => {
   }
 }
 
+// 新建“草稿会话”：用于首页默认态和“新建会话”。
 const createDraftConversation = () =>
   buildConversation({
     id: `draft_${createId()}`,
@@ -64,6 +70,7 @@ const getTextLength = (value) => String(value ?? '').replace(/\s+/g, '').length
 
 const normalizeTitleText = (value) => String(value ?? '').replace(/\s+/g, ' ').trim()
 
+// 仅在默认标题且回复文本足够长时，才自动生成会话标题。
 const shouldGenerateTitle = (title, content) => {
   if (title && title !== DEFAULT_CONVERSATION_TITLE) return false
   return getTextLength(content) >= TITLE_FROM_ASSISTANT_MIN_LENGTH
@@ -97,6 +104,7 @@ export const useConversationManager = () => {
   })
 
   const activeConversation = computed(() => {
+    // 有选中的历史会话时优先返回它；否则回退到草稿会话。
     if (activeConversationId.value) {
       return (
         conversations.value.find((conversation) => conversation.id === activeConversationId.value) ??
@@ -107,6 +115,7 @@ export const useConversationManager = () => {
     return draftConversation.value
   })
 
+  // 发送消息后把当前会话置顶，提升“最近会话”可见性。
   const moveToTop = (conversationId) => {
     const currentIndex = conversations.value.findIndex((item) => item.id === conversationId)
     if (currentIndex < 1) return
@@ -123,6 +132,7 @@ export const useConversationManager = () => {
     conversations.value.find((conversation) => conversation.id === conversationId) ?? null
 
   const startDraftConversation = () => {
+    // 清空选中会话，进入“新聊天”草稿态。
     activeConversationId.value = ''
     draftConversation.value = createDraftConversation()
   }
@@ -141,6 +151,7 @@ export const useConversationManager = () => {
       if (selectedConversation) return selectedConversation
     }
 
+    // 当前没有可用会话时，创建一个真实会话容器承载本次发送。
     const nextConversation = buildConversation({
       id: createId(),
       sessionId: '',
@@ -160,6 +171,7 @@ export const useConversationManager = () => {
     const conversation = getConversationById(conversationId)
     if (!conversation) return null
 
+    // 还未拿到 sessionId 的会话无需请求详情（通常是本地新建态）。
     if (!conversation.sessionId) {
       conversation.loaded = true
       return conversation
@@ -169,6 +181,7 @@ export const useConversationManager = () => {
       return conversation
     }
 
+    // 防止同一会话并发重复拉取。
     if (loadingConversationDetailSet.has(conversationId)) {
       return conversation
     }
@@ -195,6 +208,7 @@ export const useConversationManager = () => {
 
       return conversation
     } catch {
+      // 详情加载失败时保持当前数据，避免中断 UI。
       return null
     } finally {
       loadingConversationDetailSet.delete(conversationId)
@@ -225,7 +239,7 @@ export const useConversationManager = () => {
         return
       }
 
-      // 首页初始化保持“新会话”草稿态，不默认选中历史会话。
+      // 首页保持“新会话”草稿态，不自动激活历史会话。
       startDraftConversation()
     } catch {
       conversations.value = []
@@ -248,6 +262,7 @@ export const useConversationManager = () => {
   }
 
   const resolveStreamText = (payload) => {
+    // 兼容不同后端协议字段，尽量提取可展示文本。
     if (typeof payload === 'string') return payload
     if (!payload || typeof payload !== 'object') return ''
     return (
@@ -272,6 +287,7 @@ export const useConversationManager = () => {
     if (usedFallbackText) {
       assistantMessage.content = fallbackText
     } else {
+      // 流式结束后再尝试用完整回复生成标题，避免早期片段误命名。
       maybeAssignConversationTitle(conversation, assistantMessage.content)
     }
 
@@ -287,6 +303,7 @@ export const useConversationManager = () => {
   const submitMessage = async (rawContent) => {
     const content = String(rawContent ?? '').trim()
     if (!content) return
+    // 同一时间仅允许一个流式请求，避免消息交叉写入。
     if (isStreaming.value) return
 
     const currentConversation = ensureConversationForSubmit()
@@ -335,6 +352,7 @@ export const useConversationManager = () => {
           if (!conversation) return
 
           if (event === 'session' && typeof payload === 'object' && payload?.session_id) {
+            // 首次收到 session 事件后，绑定后端会话 ID，后续继续同一上下文。
             conversation.sessionId = String(payload.session_id)
             return
           }
@@ -346,6 +364,7 @@ export const useConversationManager = () => {
           const chunk = resolveStreamText(payload)
           if (!chunk) return
 
+          // 持续拼接 assistant 内容，驱动实时渲染。
           target.content += chunk
           maybeAssignConversationTitle(conversation, target.content)
           conversation.updatedAt = Date.now()
@@ -374,6 +393,7 @@ export const useConversationManager = () => {
   }
 
   onMounted(() => {
+    // 进入页面即拉取会话列表。
     loadConversations()
   })
 
@@ -391,4 +411,3 @@ export const useConversationManager = () => {
     loadConversations,
   }
 }
-
