@@ -1,5 +1,6 @@
 <script setup>
 import { Bubble, Sender } from 'vue-element-plus-x'
+import AnimatedGradientTitle from './AnimatedGradientTitle.vue'
 
 const props = defineProps({
   conversation: {
@@ -135,7 +136,7 @@ watch(
           <Transition :name="welcomeTransitionName">
             <div v-if="!hasMessages" class="chat-panel__welcome">
               <div class="chat-panel__welcome-card">
-                <p class="chat-panel__welcome-title">开始新会话</p>
+                <AnimatedGradientTitle text="开始新会话" tag="p" />
                 <p class="chat-panel__welcome-description">输入APT问题，我们会为你分析</p>
               </div>
             </div>
@@ -259,14 +260,6 @@ watch(
   margin-bottom: 6px;
 }
 
-.chat-panel__welcome-title {
-  margin: 0;
-  color: #303133;
-  font-size: 32px;
-  font-weight: 700;
-  line-height: 1.25;
-}
-
 .chat-panel__welcome-description {
   margin: 10px 0 0;
   color: #606266;
@@ -353,4 +346,5 @@ watch(
   }
 }
 </style>
+
 
