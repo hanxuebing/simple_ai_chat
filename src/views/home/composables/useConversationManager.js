@@ -1,4 +1,4 @@
-import { getConversationDetailApi, getConversationsListApi } from '@/api/conversations'
+import { deleteConversationApi, getConversationDetailApi, getConversationsListApi } from '@/api/conversations'
 import { sendSseStream } from './useSseStream'
 
 // 生成前端侧临时 ID（草稿消息、未持久化会话等）。
@@ -261,6 +261,31 @@ export const useConversationManager = () => {
     await loadConversationDetail(conversationId)
   }
 
+  const deleteConversation = async (conversationId) => {
+    if (!conversationId) return
+
+    const targetConversation = getConversationById(conversationId)
+    if (!targetConversation) return
+
+    try {
+      if (targetConversation.sessionId) {
+        await deleteConversationApi(targetConversation.sessionId)
+      }
+    } catch {
+      return
+    }
+
+    const targetIndex = conversations.value.findIndex((item) => item.id === conversationId)
+    if (targetIndex < 0) return
+
+    conversations.value.splice(targetIndex, 1)
+
+    if (isStreaming.value) {
+      stopStreaming()
+    }
+    startDraftConversation()
+  }
+
   const resolveStreamText = (payload) => {
     // 兼容不同后端协议字段，尽量提取可展示文本。
     if (typeof payload === 'string') return payload
@@ -405,9 +430,13 @@ export const useConversationManager = () => {
     updateSearchKeyword,
     createConversation,
     selectConversation,
+    deleteConversation,
     submitMessage,
     stopStreaming,
     isStreaming,
     loadConversations,
   }
 }
+
+
+

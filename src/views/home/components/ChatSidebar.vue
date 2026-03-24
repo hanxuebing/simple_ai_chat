@@ -1,4 +1,5 @@
 <script setup>
+// import { ElMessageBox } from 'element-plus'
 import { Typewriter } from 'vue-element-plus-x'
 
 const props = defineProps({
@@ -24,6 +25,7 @@ const emit = defineEmits([
   'update:searchKeyword',
   'createConversation',
   'selectConversation',
+  'deleteConversation',
   'toggleSidebar',
 ])
 
@@ -58,6 +60,21 @@ const handleSearchClick = () => {
   if (props.collapsed) {
     emit('toggleSidebar')
   }
+}
+
+const handleDeleteConversation = async (conversation) => {
+  try {
+    await ElMessageBox.confirm('删除后不可恢复，是否继续删除当前会话？', '确认删除', {
+      confirmButtonText: '删除',
+      cancelButtonText: '取消',
+      type: 'warning',
+      confirmButtonClass: 'el-button--danger',
+    })
+  } catch {
+    return
+  }
+
+  emit('deleteConversation', conversation.id)
 }
 </script>
 
@@ -115,6 +132,7 @@ const handleSearchClick = () => {
             placement="bottom-start"
             :width="200"
             :show-arrow="false"
+            :hide-after="0"
             popper-class="chat-sidebar__item-menu-popper"
           >
             <template #reference>
@@ -127,7 +145,13 @@ const handleSearchClick = () => {
                 <span class="chat-sidebar__item-menu-icon" aria-hidden="true"></span>
               </button>
             </template>
-            <div class="chat-sidebar__item-menu-placeholder">菜单占位，后续补充</div>
+            <button
+              type="button"
+              class="chat-sidebar__item-menu-action chat-sidebar__item-menu-action--danger"
+              @click.stop="handleDeleteConversation(conversation)"
+            >
+              删除会话
+            </button>
           </ElPopover>
         </div>
 
@@ -330,9 +354,25 @@ const handleSearchClick = () => {
     6px 0 0 #64748b;
 }
 
-.chat-sidebar__item-menu-placeholder {
+.chat-sidebar__item-menu-action {
+  width: 100%;
+  height: 30px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
   font-size: 12px;
-  color: #64748b;
+  color: #334155;
+  cursor: pointer;
+  text-align: left;
+  padding: 0 8px;
+}
+
+.chat-sidebar__item-menu-action:hover {
+  background-color: #f1f5f9;
+}
+
+.chat-sidebar__item-menu-action--danger {
+  color: #dc2626;
 }
 
 :deep(.chat-sidebar__item-menu-popper) {
@@ -381,4 +421,3 @@ const handleSearchClick = () => {
   transform: rotate(45deg);
 }
 </style>
-

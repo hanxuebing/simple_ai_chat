@@ -11,6 +11,7 @@ const {
   updateSearchKeyword,
   createConversation,
   selectConversation,
+  deleteConversation,
   submitMessage,
   isStreaming,
 } = useConversationManager()
@@ -27,6 +28,7 @@ const isSidebarCollapsed = ref(false)
       @update:search-keyword="updateSearchKeyword"
       @create-conversation="createConversation"
       @select-conversation="selectConversation"
+      @delete-conversation="deleteConversation"
       @toggle-sidebar="isSidebarCollapsed = !isSidebarCollapsed"
     />
 
@@ -53,3 +55,4 @@ const isSidebarCollapsed = ref(false)
   min-width: 0;
 }
 </style>
+
