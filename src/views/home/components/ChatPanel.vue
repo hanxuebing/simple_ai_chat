@@ -27,6 +27,7 @@ const COPY_SUCCESS_DURATION = 1600
 const enableComposerTransition = ref(false)
 const scrollContainerRef = ref(null)
 
+// 受控输入：输入框文本由上层会话态维护，避免切会话时文本丢失。
 const senderText = computed({
   get: () => String(props.draftInput ?? ''),
   set: (value) => emit('update:draftInput', String(value ?? '')),
@@ -116,6 +117,8 @@ const getMessageKey = (message, index) =>
   message.id ?? `${props.conversation?.id ?? 'draft'}-${message.role ?? 'unknown'}-${index}`
 
 const hasMessages = computed(() => messages.value.length > 0)
+
+// 输入框 loading 只由“当前会话消息”决定，杜绝跨会话串扰。
 const isCurrentConversationStreaming = computed(() =>
   messages.value.some((message) => message.role === 'assistant' && Boolean(message.streaming)),
 )
@@ -152,6 +155,7 @@ watch(
 )
 
 const handleSubmit = (value) => {
+  // 当前会话流式中时，禁止重复提交同会话新问题。
   if (senderLoading.value) return
 
   const content = String(value ?? senderText.value ?? '').trim()
@@ -168,6 +172,7 @@ const handleSubmit = (value) => {
 
 const handleCancel = () => {
   if (!senderLoading.value) return
+  // 将当前会话 id 透传给 manager，做到精确取消。
   emit('cancel', props.conversation?.id)
 }
 
