@@ -72,7 +72,6 @@ const createDraftConversation = () =>
   })
 
 const getTextLength = (value) => String(value ?? '').replace(/\s+/g, '').length
-
 const normalizeTitleText = (value) => String(value ?? '').replace(/\s+/g, ' ').trim()
 
 // 仅在默认标题且回复文本足够长时，才自动生成会话标题。
@@ -84,12 +83,67 @@ const shouldGenerateTitle = (title, content) => {
 export const useConversationManager = () => {
   const conversations = ref([])
 
+  // activeConversationId 仅用于“选中哪条历史会话”；空字符串表示当前处于草稿会话。
   const activeConversationId = ref('')
   const searchKeyword = ref('')
-  const isStreaming = ref(false)
-  const streamAbortController = ref(null)
+
+  // 核心隔离状态：每个会话一个 AbortController，互不影响。
+  // key: conversationId, value: AbortController
+  const streamingControllersByConversationId = ref(new Map())
+
   const loadingConversationDetailSet = new Set()
   const draftConversation = ref(createDraftConversation())
+
+  // 输入草稿隔离：每个会话保存各自输入框文本。
+  // key: conversationId(含 draft_xxx), value: string
+  const draftInputByConversationId = ref(new Map())
+
+  // 初始化当前草稿输入态。
+  draftInputByConversationId.value.set(draftConversation.value.id, '')
+
+  // 把“当前会话键”统一收敛到：activeConversationId 或当前 draftConversation.id。
+  const resolveConversationInputKey = (conversationId = activeConversationId.value) =>
+    String(conversationId ?? '').trim() || draftConversation.value.id
+
+  const getDraftInputByConversationId = (conversationId = '') => {
+    const key = resolveConversationInputKey(conversationId)
+    return draftInputByConversationId.value.get(key) ?? ''
+  }
+
+  const setDraftInputByConversationId = (conversationId = '', value = '') => {
+    const key = resolveConversationInputKey(conversationId)
+    draftInputByConversationId.value.set(key, String(value ?? ''))
+  }
+
+  const clearDraftInputByConversationId = (conversationId = '') => {
+    setDraftInputByConversationId(conversationId, '')
+  }
+
+  // ChatPanel 的 v-model 会通过这个方法写回当前会话草稿。
+  const updateActiveDraftInput = (value) => {
+    setDraftInputByConversationId(activeConversationId.value, value)
+  }
+
+  const getStreamingController = (conversationId = '') => {
+    const key = String(conversationId ?? '').trim()
+    if (!key) return null
+    return streamingControllersByConversationId.value.get(key) ?? null
+  }
+
+  const setStreamingController = (conversationId = '', controller = null) => {
+    const key = String(conversationId ?? '').trim()
+    if (!key || !controller) return
+    streamingControllersByConversationId.value.set(key, controller)
+  }
+
+  const deleteStreamingController = (conversationId = '') => {
+    const key = String(conversationId ?? '').trim()
+    if (!key) return
+    streamingControllersByConversationId.value.delete(key)
+  }
+
+  const isConversationStreaming = (conversationId = '') =>
+    Boolean(getStreamingController(conversationId))
 
   const filteredConversations = computed(() => {
     const keyword = searchKeyword.value.trim().toLowerCase()
@@ -120,6 +174,18 @@ export const useConversationManager = () => {
     return draftConversation.value
   })
 
+  const activeDraftInput = computed(() => getDraftInputByConversationId(activeConversationId.value))
+
+  // 全局是否存在任意会话流式中（用于上层全局标识，非输入框 loading 判定）。
+  const isStreaming = computed(() => streamingControllersByConversationId.value.size > 0)
+
+  // 基于当前会话实体 ID 判定流式状态，避免草稿态与历史会话相互污染。
+  const activeConversationKey = computed(() => String(activeConversation.value?.id ?? '').trim())
+  const isActiveConversationStreaming = computed(() => {
+    if (!activeConversationKey.value) return false
+    return isConversationStreaming(activeConversationKey.value)
+  })
+
   // 发送消息后把当前会话置顶，提升“最近会话”可见性。
   const moveToTop = (conversationId) => {
     const currentIndex = conversations.value.findIndex((item) => item.id === conversationId)
@@ -138,8 +204,15 @@ export const useConversationManager = () => {
 
   const startDraftConversation = () => {
     // 清空选中会话，进入“新聊天”草稿态。
+    // 这里会创建一个全新 draft id，确保草稿输入与历史草稿完全隔离。
+    const previousDraftId = draftConversation.value.id
     activeConversationId.value = ''
     draftConversation.value = createDraftConversation()
+
+    if (previousDraftId) {
+      draftInputByConversationId.value.delete(previousDraftId)
+    }
+    draftInputByConversationId.value.set(draftConversation.value.id, '')
   }
 
   const maybeAssignConversationTitle = (conversation, assistantText) => {
@@ -156,7 +229,7 @@ export const useConversationManager = () => {
       if (selectedConversation) return selectedConversation
     }
 
-    // 当前没有可用会话时，创建一个真实会话容器承载本次发送。
+    // 当前是草稿态发送：将草稿提升为真实会话容器后再发送。
     const nextConversation = buildConversation({
       id: createId(),
       sessionId: '',
@@ -169,6 +242,7 @@ export const useConversationManager = () => {
 
     conversations.value.unshift(nextConversation)
     activeConversationId.value = nextConversation.id
+    clearDraftInputByConversationId(nextConversation.id)
     return nextConversation
   }
 
@@ -253,6 +327,7 @@ export const useConversationManager = () => {
   }
 
   const createConversation = () => {
+    // 不中断任何已有流式；仅切换到新草稿会话。
     startDraftConversation()
   }
 
@@ -284,9 +359,11 @@ export const useConversationManager = () => {
     if (targetIndex < 0) return
 
     conversations.value.splice(targetIndex, 1)
+    draftInputByConversationId.value.delete(conversationId)
 
-    if (isStreaming.value) {
-      stopStreaming()
+    // 只停止被删除会话的流式，其他会话不受影响。
+    if (isConversationStreaming(conversationId)) {
+      stopStreaming(conversationId)
     }
     startDraftConversation()
   }
@@ -326,10 +403,16 @@ export const useConversationManager = () => {
     conversation.messageCount = conversation.messages.length
   }
 
-  const stopStreaming = (conversationId = activeConversationId.value) => {
-    streamAbortController.value?.abort()
+  const stopStreaming = (conversationId = activeConversation.value?.id ?? activeConversationId.value) => {
+    const targetConversationId = String(conversationId ?? '').trim()
+    if (!targetConversationId) return
 
-    const targetConversation = conversationId ? getConversationById(conversationId) : null
+    // 关键点：只 abort 指定会话 controller，不做全局 abort。
+    const controller = getStreamingController(targetConversationId)
+    if (!controller) return
+    controller.abort()
+
+    const targetConversation = getConversationById(targetConversationId)
     const sessionId = String(targetConversation?.sessionId ?? '').trim()
     if (!sessionId) return
 
@@ -353,13 +436,14 @@ export const useConversationManager = () => {
   const submitMessage = async (rawContent) => {
     const content = String(rawContent ?? '').trim()
     if (!content) return
-    // 同一时间仅允许一个流式请求，避免消息交叉写入。
-    if (isStreaming.value) return
 
     const currentConversation = ensureConversationForSubmit()
     if (!currentConversation) return
 
     const conversationId = currentConversation.id
+
+    // 仅阻止“同一会话”重复并发提交；其他会话可并行流式。
+    if (isConversationStreaming(conversationId)) return
 
     currentConversation.messages.push({
       id: createId(),
@@ -378,9 +462,10 @@ export const useConversationManager = () => {
     currentConversation.messages.push(assistantMessage)
     currentConversation.messageCount = currentConversation.messages.length
     moveToTop(conversationId)
+    clearDraftInputByConversationId(conversationId)
 
-    isStreaming.value = true
-    streamAbortController.value = new AbortController()
+    const abortController = new AbortController()
+    setStreamingController(conversationId, abortController)
 
     try {
       const body = {
@@ -396,7 +481,7 @@ export const useConversationManager = () => {
         url: STREAM_API_URL,
         method: 'POST',
         body,
-        signal: streamAbortController.value.signal,
+        signal: abortController.signal,
         onMessage: (payload, event) => {
           const conversation = getConversationById(conversationId)
           if (!conversation) return
@@ -437,8 +522,8 @@ export const useConversationManager = () => {
           : `请求失败：${error?.message || '未知错误'}`,
       })
     } finally {
-      isStreaming.value = false
-      streamAbortController.value = null
+      // 无论成功/失败/取消，都必须释放会话级 controller。
+      deleteStreamingController(conversationId)
     }
   }
 
@@ -452,6 +537,9 @@ export const useConversationManager = () => {
     filteredConversations,
     activeConversationId,
     activeConversation,
+    activeDraftInput,
+    isActiveConversationStreaming,
+    updateActiveDraftInput,
     updateSearchKeyword,
     createConversation,
     selectConversation,
@@ -462,10 +550,3 @@ export const useConversationManager = () => {
     loadConversations,
   }
 }
-
-
-
-
-
-
-
