@@ -100,17 +100,27 @@ const handleCancelEdit = () => {
   editingSenderText.value = ''
 }
 
-const handleSendEdit = (message, index) => {
-  // 占位：后续接入“编辑后发送”逻辑。
-  console.log('[ChatPanel] Edit send placeholder:', {
-    messageKey: getMessageKey(message, index),
-    content: editingSenderText.value,
+const handleSendEdit = () => {
+  // 当前会话流式中时，禁止重复提交编辑后的问题。
+  if (senderLoading.value) return
+
+  const content = String(editingSenderText.value ?? '').trim()
+  if (!content) return
+
+  // 发送后与“取消编辑”保持同一收口逻辑：关闭编辑输入框。
+  handleCancelEdit()
+  emit('submitMessage', content)
+
+  // 发送后强制跟随到底部，避免停留在历史位置。
+  shouldAutoFollowBottom.value = true
+  nextTick(() => {
+    scrollMessagesToBottom('auto')
   })
 }
 
-const handleSubmitEdit = (value, message, index) => {
+const handleSubmitEdit = (value) => {
   editingSenderText.value = String(value ?? '').trim()
-  handleSendEdit(message, index)
+  handleSendEdit()
 }
 
 const findQuestionForAssistantMessage = (assistantIndex) => {
@@ -274,7 +284,7 @@ watch(
                   :auto-size="{ minRows: 2, maxRows: 5 }"
                   :allow-speech="false"
                   placeholder="编辑后发送"
-                  @submit="(value) => handleSubmitEdit(value, message, index)"
+                  @submit="handleSubmitEdit"
                 >
                   <template #action-list>
                     <div class="chat-panel__edit-actions">
@@ -291,7 +301,7 @@ watch(
                         size="small"
                         round
                         class="chat-panel__edit-action chat-panel__edit-action--send"
-                        @click="handleSendEdit(message, index)"
+                        @click="handleSendEdit"
                       >
                         发送
                       </el-button>
