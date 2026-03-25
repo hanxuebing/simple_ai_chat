@@ -13,5 +13,26 @@
   --menu-item-active: #0000000f;
   --menu-item-open: #00000006;
 }
-
-
+@layer base {
+  :where(
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6,
+    p,
+    span,
+    strong,
+    b,
+    em,
+    i,
+    small,
+    label,
+    li,
+    dt,
+    dd
+  ) {
+    color: var(--text-primary);
+  }
+}
