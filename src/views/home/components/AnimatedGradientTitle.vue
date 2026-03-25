@@ -59,6 +59,7 @@ const props = defineProps({
 }
 
 @media (prefers-reduced-motion: reduce) {
+  /* 无障碍降级：当系统开启“减少动态效果”时，禁用动画并固定渐变位置 */
   .animated-gradient-title__text {
     animation: none;
     background-position: 50% 50%;
