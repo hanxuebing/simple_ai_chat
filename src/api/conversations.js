@@ -17,3 +17,7 @@ export function createConversationApi (payload = {}) {
 export function deleteConversationApi (sessionId) {
   return del(`${CONVERSATIONS_API_PREFIX}/${sessionId}`)
 }
+
+export function stopConversationStreamApi (payload = {}) {
+  return post('/chat/stream/stop', payload)
+}
