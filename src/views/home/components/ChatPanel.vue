@@ -28,6 +28,8 @@ const enableComposerTransition = ref(false)
 const scrollContainerRef = ref(null)
 const editingMessageKey = ref(null)
 const editingSenderText = ref('')
+const shouldAutoFollowBottom = ref(true)
+const AUTO_FOLLOW_BOTTOM_THRESHOLD = 96
 
 // 受控输入：输入框文本由上层会话态维护，避免切会话时文本丢失。
 const senderText = computed({
@@ -158,12 +160,28 @@ const welcomeTransitionName = computed(() =>
   enableComposerTransition.value ? 'chat-panel-intro' : '',
 )
 
+const isNearBottom = () => {
+  if (!scrollContainerRef.value) return true
+  const { scrollHeight, scrollTop, clientHeight } = scrollContainerRef.value
+  return scrollHeight - (scrollTop + clientHeight) <= AUTO_FOLLOW_BOTTOM_THRESHOLD
+}
+
+const handleScroll = () => {
+  shouldAutoFollowBottom.value = isNearBottom()
+}
+
 const scrollMessagesToBottom = (behavior = 'auto') => {
   if (!scrollContainerRef.value) return
   scrollContainerRef.value.scrollTo({
     top: scrollContainerRef.value.scrollHeight,
     behavior,
   })
+  shouldAutoFollowBottom.value = true
+}
+
+const scrollMessagesToBottomIfNeeded = (behavior = 'auto') => {
+  if (!shouldAutoFollowBottom.value) return
+  scrollMessagesToBottom(behavior)
 }
 
 watch(
@@ -217,14 +235,14 @@ watch(
   () => latestMessageDigest.value,
   async () => {
     await nextTick()
-    scrollMessagesToBottom()
+    scrollMessagesToBottomIfNeeded()
   },
   { flush: 'post' },
 )
 </script>
 
 <template>
-  <section ref="scrollContainerRef" class="chat-panel">
+  <section ref="scrollContainerRef" class="chat-panel" @scroll.passive="handleScroll">
     <main class="chat-panel__layout" :class="{ 'is-empty': !hasMessages }">
       <section class="chat-panel__messages-section" :class="{ 'is-empty': !hasMessages }">
         <div v-if="hasMessages" class="chat-panel__messages">
@@ -609,3 +627,6 @@ watch(
   }
 }
 </style>
+
+
+
