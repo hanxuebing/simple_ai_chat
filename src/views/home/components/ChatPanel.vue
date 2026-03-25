@@ -17,7 +17,7 @@ const props = defineProps({
 const emit = defineEmits(['submitMessage', 'cancel'])
 
 const inputText = ref('')
-const { copy } = useClipboard()
+const { copy, isSupported } = useClipboard({ legacy: true })
 const copiedMessageKeys = ref(new Set())
 const copyResetTimers = new Map()
 const COPY_SUCCESS_DURATION = 1600
@@ -60,6 +60,11 @@ const isCopySuccessMessage = (message, index) =>
 const handleCopyMessage = async (message, index) => {
   const content = String(message?.content ?? '').trim()
   if (!content) return
+
+  if (!isSupported.value) {
+    console.warn('[ChatPanel] Clipboard API is not supported in current environment.')
+    return
+  }
 
   try {
     await copy(content)
@@ -485,15 +490,3 @@ watch(
   }
 }
 </style>
-
-
-
-
-
-
-
-
-
-
-
-
