@@ -157,13 +157,14 @@ const handleDeleteConversation = async (conversation) => {
                 </el-icon>
               </button>
             </template>
-            <button
-              type="button"
-              class="chat-sidebar__item-menu-action chat-sidebar__item-menu-action--danger"
+            <el-button
+              type="danger"
+              text
+              class="w-full"
               @click.stop="handleDeleteConversation(conversation)"
             >
               删除会话
-            </button>
+            </el-button>
           </ElPopover>
         </div>
 
@@ -430,7 +431,7 @@ const handleDeleteConversation = async (conversation) => {
   transition: color var(--sidebar-toggle-duration) ease;
 }
 
-.chat-sidebar__item-menu-action {
+/* .chat-sidebar__item-menu-action {
   width: 100%;
   height: 30px;
   border: none;
@@ -445,11 +446,11 @@ const handleDeleteConversation = async (conversation) => {
 
 .chat-sidebar__item-menu-action:hover {
   background-color: #f1f5f9;
-}
+} */
 
-.chat-sidebar__item-menu-action--danger {
+/* .chat-sidebar__item-menu-action--danger {
   color: #dc2626;
-}
+} */
 
 :deep(.chat-sidebar__item-menu-popper) {
   padding: 8px 10px;
