@@ -178,7 +178,7 @@ const handleDeleteConversation = async (conversation) => {
       </div>
     </ElScrollbar>
 
-    <div class="chat-sidebar__version" :class="{ 'is-collapsed': props.collapsed }">v0.0.1</div>
+    <div class="chat-sidebar__version" :class="{ 'is-collapsed': props.collapsed }">v0.0.2</div>
   </aside>
 </template>
 
