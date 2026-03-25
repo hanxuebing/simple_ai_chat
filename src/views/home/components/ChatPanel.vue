@@ -1,5 +1,6 @@
 <script setup>
 import { Bubble, Sender } from 'vue-element-plus-x'
+import { useClipboard } from '@vueuse/core'
 import AnimatedGradientTitle from './AnimatedGradientTitle.vue'
 
 const props = defineProps({
@@ -13,9 +14,13 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['submitMessage'])
+const emit = defineEmits(['submitMessage', 'cancel'])
 
 const inputText = ref('')
+const { copy } = useClipboard()
+const copiedMessageKeys = ref(new Set())
+const copyResetTimers = new Map()
+const COPY_SUCCESS_DURATION = 1600
 const enableComposerTransition = ref(false)
 const scrollContainerRef = ref(null)
 
@@ -27,6 +32,50 @@ const suggestedQuestions = [
 
 const handleSuggestionPick = (question) => {
   inputText.value = question
+}
+
+const setCopySuccessState = (messageKey) => {
+  const nextKeys = new Set(copiedMessageKeys.value)
+  nextKeys.add(messageKey)
+  copiedMessageKeys.value = nextKeys
+
+  const existingTimer = copyResetTimers.get(messageKey)
+  if (existingTimer) {
+    clearTimeout(existingTimer)
+  }
+
+  const resetTimer = setTimeout(() => {
+    const resetKeys = new Set(copiedMessageKeys.value)
+    resetKeys.delete(messageKey)
+    copiedMessageKeys.value = resetKeys
+    copyResetTimers.delete(messageKey)
+  }, COPY_SUCCESS_DURATION)
+
+  copyResetTimers.set(messageKey, resetTimer)
+}
+
+const isCopySuccessMessage = (message, index) =>
+  copiedMessageKeys.value.has(getMessageKey(message, index))
+
+const handleCopyMessage = async (message, index) => {
+  const content = String(message?.content ?? '').trim()
+  if (!content) return
+
+  try {
+    await copy(content)
+    setCopySuccessState(getMessageKey(message, index))
+  } catch (error) {
+    console.error('[ChatPanel] Failed to copy message content.', error)
+  }
+}
+
+const handleReEditMessage = (message) => {
+  inputText.value = String(message?.content ?? '').trim()
+}
+
+const handleRefreshMessage = (message) => {
+  // 占位：后续接入“重新生成回答”能力。
+  console.log('[ChatPanel] Refresh placeholder for message:', message?.id)
 }
 
 const isPendingAssistantMessage = (message) =>
@@ -100,6 +149,16 @@ const handleSubmit = (value) => {
   inputText.value = ''
 }
 
+const handleCancel = () => {
+  if (!props.isStreaming) return
+  emit('cancel')
+}
+
+onBeforeUnmount(() => {
+  copyResetTimers.forEach((timer) => clearTimeout(timer))
+  copyResetTimers.clear()
+})
+
 onMounted(() => {
   nextTick(() => {
     scrollMessagesToBottom()
@@ -125,8 +184,40 @@ watch(
             <Bubble
               v-for="(message, index) in messages"
               :key="getMessageKey(message, index)"
+              class="chat-panel__bubble-item"
               v-bind="getBubbleProps(message)"
-            />
+            >
+              <template #footer>
+                <div class="chat-panel__bubble-actions">
+                  <button
+                    type="button"
+                    class="chat-panel__bubble-action"
+                    @click.stop="handleCopyMessage(message, index)"
+                  >
+                    <el-icon>
+                      <i-ep-Select v-if="isCopySuccessMessage(message, index)" />
+                      <i-ep-CopyDocument v-else />
+                    </el-icon>
+                  </button>
+                  <button
+                    v-if="message.role === 'assistant'"
+                    type="button"
+                    class="chat-panel__bubble-action"
+                    @click.stop="handleRefreshMessage(message)"
+                  >
+                    <el-icon><i-ep-Refresh /></el-icon>
+                  </button>
+                  <button
+                    v-if="message.role === 'user'"
+                    type="button"
+                    class="chat-panel__bubble-action"
+                    @click.stop="handleReEditMessage(message)"
+                  >
+                    <el-icon><i-ep-Edit /></el-icon>
+                  </button>
+                </div>
+              </template>
+            </Bubble>
           </div>
         </div>
       </section>
@@ -149,8 +240,8 @@ watch(
             :placeholder="isStreaming ? '正在生成回答，请稍候...' : '输入你的问题，回车发送'"
             :allow-speech="false"
             @submit="handleSubmit"
+            @cancel="handleCancel"
           />
-
           <!-- <p v-if="isStreaming" class="chat-panel__streaming-tip">正在接收流式返回...</p> -->
 
           <div v-if="!hasMessages" class="chat-panel__suggestions">
@@ -220,6 +311,41 @@ watch(
   gap: 12px;
   padding: 2px 0;
   padding-bottom: 100px;
+}
+
+.chat-panel__bubble-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.chat-panel__bubble-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #909399;
+  cursor: pointer;
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.chat-panel__bubble-action:hover {
+  color: #409eff;
+  background: #ecf5ff;
+}
+
+.chat-panel__bubble-item:hover .chat-panel__bubble-actions {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .chat-panel__composer-section {
@@ -359,6 +485,14 @@ watch(
   }
 }
 </style>
+
+
+
+
+
+
+
+
 
 
 
