@@ -26,6 +26,8 @@ const copyResetTimers = new Map()
 const COPY_SUCCESS_DURATION = 1600
 const enableComposerTransition = ref(false)
 const scrollContainerRef = ref(null)
+const editingMessageKey = ref(null)
+const editingSenderText = ref('')
 
 // 受控输入：输入框文本由上层会话态维护，避免切会话时文本丢失。
 const senderText = computed({
@@ -83,8 +85,30 @@ const handleCopyMessage = async (message, index) => {
   }
 }
 
-const handleReEditMessage = (message) => {
-  senderText.value = String(message?.content ?? '').trim()
+const handleReEditMessage = (message, index) => {
+  editingMessageKey.value = getMessageKey(message, index)
+  editingSenderText.value = String(message?.content ?? '').trim()
+}
+
+const isEditingMessage = (message, index) =>
+  editingMessageKey.value === getMessageKey(message, index)
+
+const handleCancelEdit = () => {
+  editingMessageKey.value = null
+  editingSenderText.value = ''
+}
+
+const handleSendEdit = (message, index) => {
+  // 占位：后续接入“编辑后发送”逻辑。
+  console.log('[ChatPanel] Edit send placeholder:', {
+    messageKey: getMessageKey(message, index),
+    content: editingSenderText.value,
+  })
+}
+
+const handleSubmitEdit = (value, message, index) => {
+  editingSenderText.value = String(value ?? '').trim()
+  handleSendEdit(message, index)
 }
 
 const handleRefreshMessage = (message) => {
@@ -148,6 +172,8 @@ watch(
     // 仅重置面板局部临时态；输入草稿由会话级状态管理。
     copiedMessageKeys.value = new Set()
     enableComposerTransition.value = false
+    editingMessageKey.value = null
+    editingSenderText.value = ''
     await nextTick()
     scrollMessagesToBottom()
   },
@@ -203,43 +229,71 @@ watch(
       <section class="chat-panel__messages-section" :class="{ 'is-empty': !hasMessages }">
         <div v-if="hasMessages" class="chat-panel__messages">
           <div class="chat-panel__bubble-list">
-            <Bubble
-              v-for="(message, index) in messages"
-              :key="getMessageKey(message, index)"
-              class="chat-panel__bubble-item"
-              v-bind="getBubbleProps(message)"
-            >
-              <template #footer>
-                <div class="chat-panel__bubble-actions">
-                  <button
-                    type="button"
-                    class="chat-panel__bubble-action"
-                    @click.stop="handleCopyMessage(message, index)"
-                  >
-                    <el-icon>
-                      <i-ep-Select v-if="isCopySuccessMessage(message, index)" />
-                      <i-ep-CopyDocument v-else />
-                    </el-icon>
-                  </button>
-                  <button
-                    v-if="message.role === 'assistant'"
-                    type="button"
-                    class="chat-panel__bubble-action"
-                    @click.stop="handleRefreshMessage(message)"
-                  >
-                    <el-icon><i-ep-Refresh /></el-icon>
-                  </button>
-                  <button
-                    v-if="message.role === 'user'"
-                    type="button"
-                    class="chat-panel__bubble-action"
-                    @click.stop="handleReEditMessage(message)"
-                  >
-                    <el-icon><i-ep-Edit /></el-icon>
-                  </button>
-                </div>
-              </template>
-            </Bubble>
+            <div v-for="(message, index) in messages" :key="getMessageKey(message, index)">
+              <div v-if="isEditingMessage(message, index)" class="chat-panel__edit-composer">
+                <Sender
+                  v-model="editingSenderText"
+                  :auto-size="{ minRows: 2, maxRows: 5 }"
+                  :allow-speech="false"
+                  placeholder="编辑后发送"
+                  @submit="(value) => handleSubmitEdit(value, message, index)"
+                >
+                  <template #action-list>
+                    <div class="chat-panel__edit-actions">
+                      <el-button
+                        size="small"
+                        round
+                        class="chat-panel__edit-action chat-panel__edit-action--cancel"
+                        @click="handleCancelEdit"
+                      >
+                        取消
+                      </el-button>
+                      <el-button
+                        type="primary"
+                        size="small"
+                        round
+                        class="chat-panel__edit-action chat-panel__edit-action--send"
+                        @click="handleSendEdit(message, index)"
+                      >
+                        发送
+                      </el-button>
+                    </div>
+                  </template>
+                </Sender>
+              </div>
+              <Bubble v-else class="chat-panel__bubble-item" v-bind="getBubbleProps(message)">
+                <template #footer>
+                  <div class="chat-panel__bubble-actions">
+                    <button
+                      type="button"
+                      class="chat-panel__bubble-action"
+                      @click.stop="handleCopyMessage(message, index)"
+                    >
+                      <el-icon>
+                        <i-ep-Select v-if="isCopySuccessMessage(message, index)" />
+                        <i-ep-CopyDocument v-else />
+                      </el-icon>
+                    </button>
+                    <button
+                      v-if="message.role === 'assistant'"
+                      type="button"
+                      class="chat-panel__bubble-action"
+                      @click.stop="handleRefreshMessage(message)"
+                    >
+                      <el-icon><i-ep-Refresh /></el-icon>
+                    </button>
+                    <button
+                      v-if="message.role === 'user'"
+                      type="button"
+                      class="chat-panel__bubble-action"
+                      @click.stop="handleReEditMessage(message, index)"
+                    >
+                      <el-icon><i-ep-Edit /></el-icon>
+                    </button>
+                  </div>
+                </template>
+              </Bubble>
+            </div>
           </div>
         </div>
       </section>
@@ -397,6 +451,54 @@ watch(
 .chat-panel__composer.with-transition {
   transition: transform 0.25s ease;
 }
+
+.chat-panel__edit-composer {
+  width: 100%;
+}
+
+.chat-panel__edit-actions {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.chat-panel__edit-composer :deep(.vepx-sender__action-list) {
+  width: 100%;
+}
+
+/* .chat-panel__edit-action {
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid #dcdfe6;
+  background: #fff;
+  color: #606266;
+  font-size: 13px;
+  cursor: pointer;
+  transition:
+    color 0.2s ease,
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.chat-panel__edit-action:hover {
+  color: #409eff;
+  border-color: #b3d8ff;
+  background: #ecf5ff;
+}
+
+.chat-panel__edit-action--send {
+  color: #fff;
+  background: #409eff;
+  border-color: #409eff;
+}
+
+.chat-panel__edit-action--send:hover {
+  color: #fff;
+  background: #66b1ff;
+  border-color: #66b1ff;
+} */
 
 .chat-panel__welcome {
   display: flex;
