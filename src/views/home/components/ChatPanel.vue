@@ -146,6 +146,12 @@ const handleRefreshMessage = (_message, index) => {
 
   emit('submitMessage', question)
   senderText.value = ''
+
+  // 刷新回答后强制回到底部，保证能看到新一轮输出。
+  shouldAutoFollowBottom.value = true
+  nextTick(() => {
+    scrollMessagesToBottom('auto')
+  })
 }
 
 const isPendingAssistantMessage = (message) =>
@@ -657,4 +663,5 @@ watch(
   }
 }
 </style>
+
 
