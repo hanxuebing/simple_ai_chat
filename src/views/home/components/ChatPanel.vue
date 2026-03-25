@@ -113,9 +113,29 @@ const handleSubmitEdit = (value, message, index) => {
   handleSendEdit(message, index)
 }
 
-const handleRefreshMessage = (message) => {
-  // 占位：后续接入“重新生成回答”能力。
-  console.log('[ChatPanel] Refresh placeholder for message:', message?.id)
+const findQuestionForAssistantMessage = (assistantIndex) => {
+  if (!Number.isInteger(assistantIndex) || assistantIndex < 0) return ''
+
+  for (let index = assistantIndex - 1; index >= 0; index -= 1) {
+    const candidate = messages.value[index]
+    if (candidate?.role !== 'user') continue
+
+    const content = String(candidate.content ?? '').trim()
+    if (content) return content
+  }
+
+  return ''
+}
+
+const handleRefreshMessage = (_message, index) => {
+  // 当前会话流式中时，禁止重复触发“刷新回答”。
+  if (senderLoading.value) return
+
+  const question = findQuestionForAssistantMessage(index)
+  if (!question) return
+
+  emit('submitMessage', question)
+  senderText.value = ''
 }
 
 const isPendingAssistantMessage = (message) =>
@@ -296,7 +316,7 @@ watch(
                       v-if="message.role === 'assistant'"
                       type="button"
                       class="chat-panel__bubble-action"
-                      @click.stop="handleRefreshMessage(message)"
+                      @click.stop="handleRefreshMessage(message, index)"
                     >
                       <el-icon><i-ep-Refresh /></el-icon>
                     </button>
@@ -627,6 +647,4 @@ watch(
   }
 }
 </style>
-
-
 
