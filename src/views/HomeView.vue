@@ -13,6 +13,7 @@ const {
   selectConversation,
   deleteConversation,
   submitMessage,
+  stopStreaming,
   isStreaming,
 } = useConversationManager()
 const isSidebarCollapsed = ref(false)
@@ -37,6 +38,7 @@ const isSidebarCollapsed = ref(false)
         :conversation="activeConversation"
         :is-streaming="isStreaming"
         @submit-message="submitMessage"
+        @cancel="stopStreaming"
       />
     </section>
   </main>
@@ -55,4 +57,3 @@ const isSidebarCollapsed = ref(false)
   min-width: 0;
 }
 </style>
-

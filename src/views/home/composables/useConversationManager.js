@@ -1,4 +1,9 @@
-import { deleteConversationApi, getConversationDetailApi, getConversationsListApi } from '@/api/conversations'
+import {
+  deleteConversationApi,
+  getConversationDetailApi,
+  getConversationsListApi,
+  stopConversationStreamApi,
+} from '@/api/conversations'
 import { sendSseStream } from './useSseStream'
 
 // 生成前端侧临时 ID（草稿消息、未持久化会话等）。
@@ -321,8 +326,28 @@ export const useConversationManager = () => {
     conversation.messageCount = conversation.messages.length
   }
 
-  const stopStreaming = () => {
+  const stopStreaming = (conversationId = activeConversationId.value) => {
     streamAbortController.value?.abort()
+
+    const targetConversation = conversationId ? getConversationById(conversationId) : null
+    const sessionId = String(targetConversation?.sessionId ?? '').trim()
+    if (!sessionId) return
+
+    const latestAssistantMessage = [...(targetConversation?.messages ?? [])]
+      .reverse()
+      .find((message) => message?.role === 'assistant')
+    const messageId = String(latestAssistantMessage?.id ?? '').trim()
+
+    const stopPayload = {
+      session_id: sessionId,
+    }
+    if (messageId) {
+      stopPayload.message_id = messageId
+    }
+
+    stopConversationStreamApi(stopPayload).catch(() => {
+      // 停止接口失败时忽略，避免影响前端本地中断结果。
+    })
   }
 
   const submitMessage = async (rawContent) => {
@@ -437,6 +462,10 @@ export const useConversationManager = () => {
     loadConversations,
   }
 }
+
+
+
+
 
 
 
