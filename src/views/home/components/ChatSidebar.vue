@@ -2,7 +2,7 @@
 // import { ElMessageBox } from 'element-plus'
 import { Typewriter } from 'vue-element-plus-x'
 import logoIcon from '@/assets/icons/logo.svg'
-import closeSidebarIcon from '@/assets/icons/flowbite--close-sidebar-outline.svg'
+import CloseSidebarOutlineIcon from '@/components/icons/CloseSidebarOutlineIcon.vue'
 
 const props = defineProps({
   searchKeyword: {
@@ -84,12 +84,9 @@ const handleDeleteConversation = async (conversation) => {
         :aria-label="props.collapsed ? '展开侧栏' : '收起侧栏'"
         @click="emit('toggleSidebar')"
       >
-        <img
-          class="chat-sidebar__top-toggle-icon"
-          :src="closeSidebarIcon"
-          alt=""
-          aria-hidden="true"
-        />
+        <el-icon class="chat-sidebar__top-toggle-icon" size="18" aria-hidden="true">
+          <CloseSidebarOutlineIcon />
+        </el-icon>
       </button>
     </div>
 
@@ -226,35 +223,36 @@ const handleDeleteConversation = async (conversation) => {
 .chat-sidebar__top-toggle-btn {
   width: 28px;
   height: 28px;
-  border: 1px solid #e5e7eb;
   border-radius: 8px;
-  background-color: #fff;
+  /* background-color: transparent; */
+  color: var(--text-tertiary, #8f8f8f);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   flex-shrink: 0;
   transition:
-    background-color var(--sidebar-toggle-duration) ease,
-    border-color var(--sidebar-toggle-duration) ease,
+    color var(--sidebar-toggle-duration) ease,
     transform var(--sidebar-toggle-duration) ease;
 }
 
 .chat-sidebar__top-toggle-btn:hover {
-  background-color: var(--menu-item-highlighted);
+  color: #334155;
 }
 
 .chat-sidebar__top-toggle-btn:active {
-  background-color: var(--menu-item-open);
+  color: #1f2937;
 }
 
 .chat-sidebar__top-toggle-btn.is-collapsed {
-  transform: rotate(180deg);
+  color: var(--text-primary);
 }
 
 .chat-sidebar__top-toggle-icon {
-  width: 16px;
-  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }
 
 .chat-sidebar__header {
@@ -276,6 +274,7 @@ const handleDeleteConversation = async (conversation) => {
 }
 
 .chat-sidebar__action-btn {
+  color: var(--text-primary);
   height: calc(var(--spacing) * 9);
   width: 100%;
   border: none;
@@ -286,7 +285,6 @@ const handleDeleteConversation = async (conversation) => {
   align-items: center;
   justify-content: flex-start;
   gap: 8px;
-  color: #1f2937;
   text-align: left;
   cursor: pointer;
   transition: background-color var(--sidebar-toggle-duration) ease;
