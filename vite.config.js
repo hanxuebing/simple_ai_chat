@@ -11,11 +11,35 @@ import Icons from 'unplugin-icons/vite'
 import IconsResolver from 'unplugin-icons/resolver'
 import { mockDevServerPlugin } from 'vite-plugin-mock-dev-server'
 
+function forceElementPlusLayer () {
+  const targetPackages = [
+    '/node_modules/element-plus/',
+    '/node_modules/vue-element-plus-x/',
+  ]
+
+  return {
+    name: 'force-element-plus-layer',
+    enforce: 'pre',
+    transform (code, id) {
+      const cleanId = id.split('?', 1)[0].replace(/\\/g, '/')
+      if (!cleanId.endsWith('.css')) return null
+
+      const isTargetCss = targetPackages.some((pkgPath) => cleanId.includes(pkgPath))
+      if (!isTargetCss) return null
+
+      return {
+        code: `@layer element-plus {\n${code}\n}`,
+        map: null,
+      }
+    },
+  }
+}
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd())
   return {
     plugins: [
+      forceElementPlusLayer(),
       vue(),
       Components({
         dts: './components.d.ts',
@@ -66,4 +90,6 @@ export default defineConfig(({ mode }) => {
     },
   }
 })
+
+
 

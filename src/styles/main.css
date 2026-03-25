@@ -1,3 +1,5 @@
+@layer theme, base, element-plus, components, utilities;
+
 @import 'tailwindcss';
 
 @theme {
@@ -13,26 +15,19 @@
   --menu-item-active: #0000000f;
   --menu-item-open: #00000006;
 }
+
 @layer base {
-  :where(
-    h1,
-    h2,
-    h3,
-    h4,
-    h5,
-    h6,
-    p,
-    span,
-    strong,
-    b,
-    em,
-    i,
-    small,
-    label,
-    li,
-    dt,
-    dd
-  ) {
+  /* 默认业务文本颜色 */
+  :where(#app) :where(h1, h2, h3, h4, h5, h6, p, span, strong, b, em, i, small, label, li, dt, dd) {
     color: var(--text-primary);
   }
+
+  /* Element Plus 容器内（含子孙元素）回退为组件自身继承色 */
+  :where(#app)
+    :where([class^='el-'], [class*=' el-'])
+    :where(h1, h2, h3, h4, h5, h6, p, span, strong, b, em, i, small, label, li, dt, dd) {
+    color: inherit;
+  }
+}
+@layer components {
 }
