@@ -84,7 +84,7 @@ flowchart TD
 ```mermaid
 flowchart TD
   A[ChatPanel cancel] --> B[emit cancel with conversation.id]
-  B --> C[useConversationManager.stopStreaming(conversationId)]
+  B --> C["useConversationManager.stopStreaming(conversationId)"]
   C --> D{Map 中是否存在该会话 controller}
   D -- 否 --> X[返回]
   D -- 是 --> E[abort 该 controller]
@@ -191,4 +191,5 @@ stateDiagram-v2
 
 - 是否仍有任何地方使用“全局流式锁”决定提交。
 - ChatPanel 的 loading 是否被外部状态覆盖。
+
 
