@@ -18,6 +18,7 @@ export default defineConfig(({ mode }) => {
     plugins: [
       vue(),
       Components({
+        dts: './components.d.ts',
         globs: ['!src/components/**/*.vue'],
         resolvers: [
           ElementPlusResolver(),
@@ -27,6 +28,7 @@ export default defineConfig(({ mode }) => {
         ],
       }),
       AutoImport({
+        dts: './auto-imports.d.ts',
         ignore: ['src/components/**'],
         resolvers: [ElementPlusResolver()],
         imports: ['vue', 'vue-router', 'pinia'],
@@ -64,3 +66,4 @@ export default defineConfig(({ mode }) => {
     },
   }
 })
+
