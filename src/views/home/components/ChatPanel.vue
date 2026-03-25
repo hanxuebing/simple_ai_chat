@@ -8,21 +8,29 @@ const props = defineProps({
     type: Object,
     default: null,
   },
+  draftInput: {
+    type: String,
+    default: '',
+  },
   isStreaming: {
     type: Boolean,
     default: false,
   },
 })
 
-const emit = defineEmits(['submitMessage', 'cancel'])
+const emit = defineEmits(['update:draftInput', 'submitMessage', 'cancel'])
 
-const inputText = ref('')
 const { copy, isSupported } = useClipboard({ legacy: true })
 const copiedMessageKeys = ref(new Set())
 const copyResetTimers = new Map()
 const COPY_SUCCESS_DURATION = 1600
 const enableComposerTransition = ref(false)
 const scrollContainerRef = ref(null)
+
+const senderText = computed({
+  get: () => String(props.draftInput ?? ''),
+  set: (value) => emit('update:draftInput', String(value ?? '')),
+})
 
 const suggestedQuestions = [
   'T1059.001是什么技术？',
@@ -31,7 +39,7 @@ const suggestedQuestions = [
 ]
 
 const handleSuggestionPick = (question) => {
-  inputText.value = question
+  senderText.value = question
 }
 
 const setCopySuccessState = (messageKey) => {
@@ -75,7 +83,7 @@ const handleCopyMessage = async (message, index) => {
 }
 
 const handleReEditMessage = (message) => {
-  inputText.value = String(message?.content ?? '').trim()
+  senderText.value = String(message?.content ?? '').trim()
 }
 
 const handleRefreshMessage = (message) => {
@@ -108,7 +116,10 @@ const getMessageKey = (message, index) =>
   message.id ?? `${props.conversation?.id ?? 'draft'}-${message.role ?? 'unknown'}-${index}`
 
 const hasMessages = computed(() => messages.value.length > 0)
-const senderLoading = computed(() => props.isStreaming)
+const isCurrentConversationStreaming = computed(() =>
+  messages.value.some((message) => message.role === 'assistant' && Boolean(message.streaming)),
+)
+const senderLoading = computed(() => isCurrentConversationStreaming.value)
 
 const latestMessageDigest = computed(() => {
   const latest = messages.value[messages.value.length - 1]
@@ -131,7 +142,8 @@ const scrollMessagesToBottom = (behavior = 'auto') => {
 watch(
   () => props.conversation?.id,
   async () => {
-    // 切换/新建会话时回到初始态，不播放回弹动画。
+    // 仅重置面板局部临时态；输入草稿由会话级状态管理。
+    copiedMessageKeys.value = new Set()
     enableComposerTransition.value = false
     await nextTick()
     scrollMessagesToBottom()
@@ -140,9 +152,9 @@ watch(
 )
 
 const handleSubmit = (value) => {
-  if (props.isStreaming) return
+  if (senderLoading.value) return
 
-  const content = String(value ?? inputText.value ?? '').trim()
+  const content = String(value ?? senderText.value ?? '').trim()
   if (!content) return
 
   if (!hasMessages.value) {
@@ -151,12 +163,12 @@ const handleSubmit = (value) => {
   }
 
   emit('submitMessage', content)
-  inputText.value = ''
+  senderText.value = ''
 }
 
 const handleCancel = () => {
-  if (!props.isStreaming) return
-  emit('cancel')
+  if (!senderLoading.value) return
+  emit('cancel', props.conversation?.id)
 }
 
 onBeforeUnmount(() => {
@@ -239,10 +251,10 @@ watch(
           </Transition>
 
           <Sender
-            v-model="inputText"
+            v-model="senderText"
             :auto-size="{ minRows: 2, maxRows: 5 }"
             :loading="senderLoading"
-            :placeholder="isStreaming ? '正在生成回答，请稍候...' : '输入你的问题，回车发送'"
+            :placeholder="senderLoading ? '正在生成回答，请稍候...' : '输入你的问题，回车发送'"
             :allow-speech="false"
             @submit="handleSubmit"
             @cancel="handleCancel"
@@ -256,7 +268,7 @@ watch(
               :key="question"
               type="button"
               class="chat-panel__suggestion-item"
-              :class="{ 'is-selected': inputText === question }"
+              :class="{ 'is-selected': senderText === question }"
               @click="handleSuggestionPick(question)"
             >
               {{ question }}

@@ -8,13 +8,15 @@ const {
   filteredConversations,
   activeConversationId,
   activeConversation,
+  activeDraftInput,
+  isActiveConversationStreaming,
+  updateActiveDraftInput,
   updateSearchKeyword,
   createConversation,
   selectConversation,
   deleteConversation,
   submitMessage,
   stopStreaming,
-  isStreaming,
 } = useConversationManager()
 const isSidebarCollapsed = ref(false)
 </script>
@@ -36,7 +38,9 @@ const isSidebarCollapsed = ref(false)
     <section class="home-layout__content">
       <ChatPanel
         :conversation="activeConversation"
-        :is-streaming="isStreaming"
+        :draft-input="activeDraftInput"
+        :is-streaming="isActiveConversationStreaming"
+        @update:draft-input="updateActiveDraftInput"
         @submit-message="submitMessage"
         @cancel="stopStreaming"
       />
