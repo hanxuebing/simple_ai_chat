@@ -173,7 +173,6 @@ onBeforeUnmount(() => {
         v-model="localKeyword"
         class="chat-search-dialog__search-input"
         placeholder="搜索"
-        clearable
         @keyup.enter="triggerImmediateSearch(localKeyword)"
       >
         <template #prefix>
