@@ -15,6 +15,7 @@ declare module 'vue' {
     ElDialog: typeof import('element-plus/es')['ElDialog']
     ElEmpty: typeof import('element-plus/es')['ElEmpty']
     ElIcon: typeof import('element-plus/es')['ElIcon']
+    ElInput: typeof import('element-plus/es')['ElInput']
     ElPopover: typeof import('element-plus/es')['ElPopover']
     ElScrollbar: typeof import('element-plus/es')['ElScrollbar']
     IEpCopyDocument: typeof import('~icons/ep/copy-document')['default']
