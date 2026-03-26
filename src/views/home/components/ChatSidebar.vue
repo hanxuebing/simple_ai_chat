@@ -447,29 +447,8 @@ const handleDeleteConversation = async (conversation) => {
   transition: color var(--sidebar-toggle-duration) ease;
 }
 
-/* .chat-sidebar__item-menu-action {
-  width: 100%;
-  height: 30px;
-  border: none;
-  border-radius: 6px;
-  background: transparent;
-  font-size: 12px;
-  color: #334155;
-  cursor: pointer;
-  text-align: left;
-  padding: 0 8px;
-}
-
-.chat-sidebar__item-menu-action:hover {
-  background-color: #f1f5f9;
-} */
-
-/* .chat-sidebar__item-menu-action--danger {
-  color: #dc2626;
-} */
-
-:deep(.chat-sidebar__item-menu-popper) {
-  padding: 8px 10px;
+:global(.chat-sidebar__item-menu-popper) {
+  border-radius: 16px;
 }
 
 .chat-sidebar__version {
