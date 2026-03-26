@@ -190,6 +190,17 @@ export const useConversationManager = () => {
     searchKeyword.value = keyword
   }
 
+  const resolveConversationId = (conversationIdOrSessionId = '') => {
+    const target = String(conversationIdOrSessionId ?? '').trim()
+    if (!target) return ''
+
+    const matchedConversation = conversations.value.find(
+      (conversation) => conversation.id === target || conversation.sessionId === target,
+    )
+
+    return matchedConversation?.id ?? ''
+  }
+
   const getConversationById = (conversationId) =>
     conversations.value.find((conversation) => conversation.id === conversationId) ?? null
 
@@ -322,14 +333,17 @@ export const useConversationManager = () => {
     startDraftConversation()
   }
 
-  const selectConversation = async (conversationId) => {
-    if (!conversationId) {
+  const selectConversation = async (conversationIdOrSessionId) => {
+    if (!conversationIdOrSessionId) {
       startDraftConversation()
       return
     }
 
-    activeConversationId.value = conversationId
-    await loadConversationDetail(conversationId)
+    const resolvedConversationId = resolveConversationId(conversationIdOrSessionId)
+    if (!resolvedConversationId) return
+
+    activeConversationId.value = resolvedConversationId
+    await loadConversationDetail(resolvedConversationId)
   }
 
   const deleteConversation = async (conversationId) => {

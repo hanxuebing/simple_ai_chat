@@ -9,7 +9,7 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['update:searchKeyword'])
+const emit = defineEmits(['update:searchKeyword', 'selectConversation'])
 
 const visible = defineModel({
   type: Boolean,
@@ -47,7 +47,11 @@ const resolveSearchList = (response) => {
   if (Array.isArray(response)) return response
 
   const responseData = response?.data
+  const responseResults = response?.results
+  const responseDataResults = responseData?.results
   const candidates = [
+    responseResults,
+    responseDataResults,
     response?.conversations,
     response?.list,
     response?.items,
@@ -57,6 +61,14 @@ const resolveSearchList = (response) => {
   ]
 
   return candidates.find((item) => Array.isArray(item)) ?? []
+}
+
+const handleSelectConversation = (conversation) => {
+  const sessionId = String(conversation?.session_id ?? conversation?.sessionId ?? '').trim()
+  if (!sessionId) return
+
+  emit('selectConversation', sessionId)
+  visible.value = false
 }
 
 const performSearch = async (keyword) => {
@@ -83,7 +95,7 @@ const performSearch = async (keyword) => {
     )
 
     if (requestId !== activeSearchRequestId) return
-    searchResults.value = resolveSearchList(response.results)
+    searchResults.value = resolveSearchList(response)
   } catch (error) {
     if (requestId !== activeSearchRequestId) return
     if (isRequestCanceled(error)) return
@@ -176,10 +188,14 @@ onBeforeUnmount(() => {
       <div v-else class="chat-search-dialog__list">
         <div
           v-for="(conversation, index) in searchResults"
-          :key="conversation?.id ?? conversation?.session_id ?? conversation?.sessionId ?? index"
+          :key="conversation?.session_id ?? conversation?.sessionId ?? conversation?.id ?? index"
           class="chat-search-dialog__item"
+          @click="handleSelectConversation(conversation)"
         >
-          <p class="chat-search-dialog__item-title" v-html="conversation.title_snippet" />
+          <p
+            class="chat-search-dialog__item-title"
+            v-html="conversation?.title_snippet || conversation?.title || '未命名会话'"
+          />
           <p
             v-for="(preview, previewIndex) in getConversationPreview(conversation)"
             :key="`${conversation?.session_id ?? conversation?.id ?? index}-${previewIndex}`"
@@ -247,6 +263,12 @@ onBeforeUnmount(() => {
   border: 1px solid #e2e8f0;
   border-radius: 10px;
   background-color: #f8fafc;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.chat-search-dialog__item:hover {
+  border-color: #cbd5e1;
 }
 
 .chat-search-dialog__item-title {

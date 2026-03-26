@@ -61,6 +61,11 @@ const handleSearchClick = () => {
   searchDialogVisible.value = true
 }
 
+const handleSelectConversationFromSearch = (sessionId) => {
+  if (!sessionId) return
+  emit('selectConversation', sessionId)
+}
+
 const handleDeleteConversation = async (conversation) => {
   try {
     await ElMessageBox.confirm('删除后不可恢复，是否继续删除当前会话？', '确认删除', {
@@ -186,6 +191,7 @@ const handleDeleteConversation = async (conversation) => {
       v-model="searchDialogVisible"
       :search-keyword="props.searchKeyword"
       @update:search-keyword="emit('update:searchKeyword', $event)"
+      @select-conversation="handleSelectConversationFromSearch"
     />
   </aside>
 </template>
