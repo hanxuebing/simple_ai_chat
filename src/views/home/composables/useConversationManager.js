@@ -40,7 +40,9 @@ const buildMessage = (message = {}) => ({
 
 // 统一会话结构，确保列表、详情、草稿都能走同一套渲染逻辑。
 const buildConversation = (conversation = {}) => {
-  const id = String(conversation.id ?? conversation.session_id ?? conversation.sessionId ?? createId())
+  const id = String(
+    conversation.id ?? conversation.session_id ?? conversation.sessionId ?? createId(),
+  )
   const sessionId = String(conversation.sessionId ?? conversation.session_id ?? id ?? '')
   const messages = Array.isArray(conversation.messages)
     ? conversation.messages.map((message) => buildMessage(message))
@@ -55,7 +57,9 @@ const buildConversation = (conversation = {}) => {
     ),
     messages,
     loaded: conversation.loaded ?? messages.length > 0,
-    messageCount: Number(conversation.message_count ?? conversation.messageCount ?? messages.length),
+    messageCount: Number(
+      conversation.message_count ?? conversation.messageCount ?? messages.length,
+    ),
   }
 }
 
@@ -72,7 +76,10 @@ const createDraftConversation = () =>
   })
 
 const getTextLength = (value) => String(value ?? '').replace(/\s+/g, '').length
-const normalizeTitleText = (value) => String(value ?? '').replace(/\s+/g, ' ').trim()
+const normalizeTitleText = (value) =>
+  String(value ?? '')
+    .replace(/\s+/g, ' ')
+    .trim()
 
 // 仅在默认标题且回复文本足够长时，才自动生成会话标题。
 const shouldGenerateTitle = (title, content) => {
@@ -166,8 +173,9 @@ export const useConversationManager = () => {
     // 有选中的历史会话时优先返回它；否则回退到草稿会话。
     if (activeConversationId.value) {
       return (
-        conversations.value.find((conversation) => conversation.id === activeConversationId.value) ??
-        draftConversation.value
+        conversations.value.find(
+          (conversation) => conversation.id === activeConversationId.value,
+        ) ?? draftConversation.value
       )
     }
 
@@ -403,7 +411,9 @@ export const useConversationManager = () => {
     conversation.messageCount = conversation.messages.length
   }
 
-  const stopStreaming = (conversationId = activeConversation.value?.id ?? activeConversationId.value) => {
+  const stopStreaming = (
+    conversationId = activeConversation.value?.id ?? activeConversationId.value,
+  ) => {
     const targetConversationId = String(conversationId ?? '').trim()
     if (!targetConversationId) return
 
@@ -517,9 +527,7 @@ export const useConversationManager = () => {
       finalizeAssistantMessage({
         conversationId,
         assistantMessageId: assistantMessage.id,
-        fallbackText: isAbortError
-          ? '请求已取消。'
-          : `请求失败：${error?.message || '未知错误'}`,
+        fallbackText: isAbortError ? '请求已取消。' : `请求失败：${error?.message || '未知错误'}`,
       })
     } finally {
       // 无论成功/失败/取消，都必须释放会话级 controller。
