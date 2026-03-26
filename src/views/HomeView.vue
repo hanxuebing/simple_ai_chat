@@ -4,8 +4,8 @@ import ChatPanel from './home/components/ChatPanel.vue'
 import { useConversationManager } from './home/composables/useConversationManager'
 
 const {
+  conversations,
   searchKeyword,
-  filteredConversations,
   activeConversationId,
   activeConversation,
   activeDraftInput,
@@ -25,7 +25,7 @@ const isSidebarCollapsed = ref(false)
   <main class="home-layout">
     <ChatSidebar
       :search-keyword="searchKeyword"
-      :conversations="filteredConversations"
+      :conversations="conversations"
       :active-conversation-id="activeConversationId"
       :collapsed="isSidebarCollapsed"
       @update:search-keyword="updateSearchKeyword"

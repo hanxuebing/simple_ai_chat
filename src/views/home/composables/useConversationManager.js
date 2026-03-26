@@ -152,23 +152,6 @@ export const useConversationManager = () => {
   const isConversationStreaming = (conversationId = '') =>
     Boolean(getStreamingController(conversationId))
 
-  const filteredConversations = computed(() => {
-    const keyword = searchKeyword.value.trim().toLowerCase()
-    if (!keyword) return conversations.value
-
-    return conversations.value.filter((conversation) => {
-      const titleMatched = String(conversation.title ?? '')
-        .toLowerCase()
-        .includes(keyword)
-      const contentMatched = conversation.messages.some((item) =>
-        String(item.content ?? '')
-          .toLowerCase()
-          .includes(keyword),
-      )
-      return titleMatched || contentMatched
-    })
-  })
-
   const activeConversation = computed(() => {
     // 有选中的历史会话时优先返回它；否则回退到草稿会话。
     if (activeConversationId.value) {
@@ -541,8 +524,8 @@ export const useConversationManager = () => {
   })
 
   return {
+    conversations,
     searchKeyword,
-    filteredConversations,
     activeConversationId,
     activeConversation,
     activeDraftInput,
