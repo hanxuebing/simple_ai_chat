@@ -1,0 +1,261 @@
+<script setup>
+import { searchConversationsApi } from '@/api/conversations'
+
+const props = defineProps({
+  searchKeyword: {
+    type: String,
+    default: '',
+  },
+})
+
+const emit = defineEmits(['update:searchKeyword'])
+
+const visible = defineModel({
+  type: Boolean,
+  default: false,
+})
+
+const localKeyword = ref(props.searchKeyword)
+const searchLoading = ref(false)
+const searchResults = ref([])
+let searchDebounceTimer = null
+let activeSearchRequestId = 0
+
+const normalizePreviewText = (text) =>
+  String(text ?? '')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+const getConversationTitle = (conversation) => {
+  const title = normalizePreviewText(conversation?.title)
+  if (title) return title
+
+  const messages = Array.isArray(conversation?.messages) ? conversation.messages : []
+  for (let index = 0; index < messages.length; index += 1) {
+    const message = messages[index]
+    const content = normalizePreviewText(message?.content)
+    if (content) return content
+  }
+
+  return '未命名会话'
+}
+
+const getConversationPreview = (conversation) => {
+  const messages = Array.isArray(conversation?.messages) ? conversation.messages : []
+  for (let index = 0; index < messages.length; index += 1) {
+    const message = messages[index]
+    const content = normalizePreviewText(message?.content)
+    if (content) return content
+  }
+
+  return '暂无可展示内容'
+}
+
+const resolveSearchList = (response) => {
+  if (Array.isArray(response)) return response
+
+  const responseData = response?.data
+  const candidates = [
+    response?.conversations,
+    response?.list,
+    response?.items,
+    responseData?.conversations,
+    responseData?.list,
+    responseData?.items,
+  ]
+
+  return candidates.find((item) => Array.isArray(item)) ?? []
+}
+
+const performSearch = async (keyword) => {
+  const normalizedKeyword = String(keyword ?? '').trim()
+
+  if (!normalizedKeyword) {
+    searchResults.value = []
+    searchLoading.value = false
+    return
+  }
+
+  const requestId = ++activeSearchRequestId
+  searchLoading.value = true
+
+  try {
+    const response = await searchConversationsApi({
+      keyword: normalizedKeyword,
+      page: 1,
+      page_size: 20,
+    })
+
+    if (requestId !== activeSearchRequestId) return
+    searchResults.value = resolveSearchList(response)
+  } catch {
+    if (requestId !== activeSearchRequestId) return
+    searchResults.value = []
+  } finally {
+    if (requestId !== activeSearchRequestId) {
+      searchLoading.value = false
+    }
+  }
+}
+
+const triggerDebouncedSearch = (keyword, { emitKeyword = true } = {}) => {
+  if (searchDebounceTimer) {
+    clearTimeout(searchDebounceTimer)
+  }
+
+  searchDebounceTimer = setTimeout(() => {
+    if (emitKeyword) {
+      emit('update:searchKeyword', keyword)
+    }
+    performSearch(keyword)
+  }, 300)
+}
+
+watch(
+  () => props.searchKeyword,
+  (keyword) => {
+    const normalizedKeyword = String(keyword ?? '')
+    if (normalizedKeyword === localKeyword.value) return
+    localKeyword.value = normalizedKeyword
+    triggerDebouncedSearch(normalizedKeyword, { emitKeyword: false })
+  },
+)
+
+watch(localKeyword, (keyword) => {
+  if (keyword === props.searchKeyword) return
+  triggerDebouncedSearch(keyword)
+})
+
+watch(visible, (isVisible) => {
+  if (!isVisible) return
+  performSearch(localKeyword.value)
+})
+
+onBeforeUnmount(() => {
+  if (searchDebounceTimer) {
+    clearTimeout(searchDebounceTimer)
+  }
+})
+</script>
+
+<template>
+  <ElDialog
+    v-model="visible"
+    width="678"
+    align-center
+    modal-class="chat-search-dialog-modal"
+    class="chat-search-dialog"
+  >
+    <template #header>
+      <ElInput
+        v-model="localKeyword"
+        class="chat-search-dialog__search-input"
+        placeholder="搜索"
+        clearable
+      >
+        <template #prefix>
+          <el-icon size="16"><i-ep-Search /></el-icon>
+        </template>
+      </ElInput>
+    </template>
+    <div class="chat-search-dialog__body">
+      <ElEmpty v-if="!localKeyword.trim()" description="请输入关键词进行搜索" :image-size="56" />
+      <div v-else-if="searchLoading" class="chat-search-dialog__state">搜索中...</div>
+      <ElEmpty v-else-if="!searchResults.length" description="未找到相关会话" :image-size="56" />
+      <div v-else class="chat-search-dialog__list">
+        <div
+          v-for="(conversation, index) in searchResults"
+          :key="conversation?.id ?? conversation?.session_id ?? conversation?.sessionId ?? index"
+          class="chat-search-dialog__item"
+        >
+          <p class="chat-search-dialog__item-title">{{ getConversationTitle(conversation) }}</p>
+          <p class="chat-search-dialog__item-preview">{{ getConversationPreview(conversation) }}</p>
+        </div>
+      </div>
+    </div>
+  </ElDialog>
+</template>
+
+<style scoped>
+:global(.chat-search-dialog) {
+  height: 440px;
+  border-radius: 16px;
+  padding: 0;
+}
+:global(.chat-search-dialog-modal) {
+  background-color: transparent !important;
+}
+:global(.chat-search-dialog .el-dialog__header) {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  margin-right: 0;
+  border-bottom: 1px solid var(--el-border-color-lighter);
+}
+:global(.chat-search-dialog .el-dialog__title) {
+  flex: 1;
+  min-width: 0;
+  display: block;
+}
+:global(.chat-search-dialog .el-dialog__body) {
+  padding: 16px 20px;
+}
+
+.chat-search-dialog__divider {
+  height: 1px;
+  background-color: var(--el-border-color-lighter);
+}
+
+.chat-search-dialog__body {
+  height: 330px;
+  overflow: auto;
+}
+
+.chat-search-dialog__state {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+}
+
+.chat-search-dialog__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.chat-search-dialog__item {
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background-color: #f8fafc;
+}
+
+.chat-search-dialog__item-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+  line-height: 1.5;
+}
+
+.chat-search-dialog__item-preview {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: #475569;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.chat-search-dialog__search-input {
+  width: 100%;
+}
+
+.chat-search-dialog__search-input :deep(.el-input__wrapper) {
+  padding-inline: 0;
+  background: transparent;
+  box-shadow: none;
+}
+</style>

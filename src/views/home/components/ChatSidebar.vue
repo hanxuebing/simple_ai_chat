@@ -3,6 +3,7 @@
 import { Typewriter } from 'vue-element-plus-x'
 import logoIcon from '@/assets/icons/logo.svg'
 import CloseSidebarOutlineIcon from '@/components/icons/CloseSidebarOutlineIcon.vue'
+import ChatSearchDialog from './search-dialog/ChatSearchDialog.vue'
 
 const props = defineProps({
   searchKeyword: {
@@ -54,7 +55,11 @@ const handleCreateConversation = () => {
   emit('createConversation')
 }
 
-const handleSearchClick = () => null
+const searchDialogVisible = ref(false)
+
+const handleSearchClick = () => {
+  searchDialogVisible.value = true
+}
 
 const handleDeleteConversation = async (conversation) => {
   try {
@@ -110,7 +115,7 @@ const handleDeleteConversation = async (conversation) => {
         @click="handleSearchClick"
       >
         <el-icon size="16"><i-ep-Search /></el-icon>
-        <span v-if="!props.collapsed">搜索（不支持）</span>
+        <span v-if="!props.collapsed">搜索</span>
       </button>
     </header>
 
@@ -177,6 +182,11 @@ const handleDeleteConversation = async (conversation) => {
     </ElScrollbar>
 
     <div class="chat-sidebar__version" :class="{ 'is-collapsed': props.collapsed }">v0.0.2</div>
+    <ChatSearchDialog
+      v-model="searchDialogVisible"
+      :search-keyword="props.searchKeyword"
+      @update:search-keyword="emit('update:searchKeyword', $event)"
+    />
   </aside>
 </template>
 
