@@ -342,16 +342,16 @@ onBeforeUnmount(() => {
 .chat-search-dialog__search-input :deep(.el-input__wrapper) {
   border-radius: 8px;
   padding-inline: 0;
-  background-color: #f8fafc;
+  background-color: transparent;
   box-shadow: none;
   transition: background-color 0.2s ease;
 }
 
 .chat-search-dialog__search-input :deep(.el-input__wrapper:hover) {
-  background-color: #f1f5f9;
+  background-color: transparent;
 }
 
 .chat-search-dialog__search-input :deep(.el-input.is-focus .el-input__wrapper) {
-  background-color: #eef2f7;
+  background-color: transparent;
 }
 </style>
