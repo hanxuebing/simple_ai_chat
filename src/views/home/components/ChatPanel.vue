@@ -2,6 +2,7 @@
 import { Bubble, Sender } from 'vue-element-plus-x'
 import { useClipboard } from '@vueuse/core'
 import AnimatedGradientTitle from './AnimatedGradientTitle.vue'
+import ChatSuggestions from './ChatSuggestions.vue'
 
 const props = defineProps({
   conversation: {
@@ -36,12 +37,6 @@ const senderText = computed({
   get: () => String(props.draftInput ?? ''),
   set: (value) => emit('update:draftInput', String(value ?? '')),
 })
-
-const suggestedQuestions = [
-  'T1059.001是什么技术？',
-  'APT28在2024年的攻击活动报告摘要',
-  'Lazarus Group和Hidden Cobra是同一个组织吗？',
-]
 
 const handleSuggestionPick = (question) => {
   senderText.value = question
@@ -363,6 +358,12 @@ watch(
             </div>
           </Transition>
 
+          <ChatSuggestions
+            v-if="!hasMessages"
+            :selected-question="senderText"
+            @pick="handleSuggestionPick"
+          />
+
           <Sender
             v-model="senderText"
             :auto-size="{ minRows: 2, maxRows: 5 }"
@@ -373,20 +374,6 @@ watch(
             @cancel="handleCancel"
           />
           <!-- <p v-if="isStreaming" class="chat-panel__streaming-tip">正在接收流式返回...</p> -->
-
-          <div v-if="!hasMessages" class="chat-panel__suggestions">
-            <p class="chat-panel__suggestions-title">猜你想问：</p>
-            <button
-              v-for="question in suggestedQuestions"
-              :key="question"
-              type="button"
-              class="chat-panel__suggestion-item"
-              :class="{ 'is-selected': senderText === question }"
-              @click="handleSuggestionPick(question)"
-            >
-              {{ question }}
-            </button>
-          </div>
         </div>
       </section>
     </main>
@@ -499,7 +486,7 @@ watch(
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 48px;
 }
 
 .chat-panel__composer.with-transition {
@@ -521,39 +508,6 @@ watch(
   width: 100%;
 }
 
-/* .chat-panel__edit-action {
-  height: 30px;
-  padding: 0 12px;
-  border-radius: 8px;
-  border: 1px solid #dcdfe6;
-  background: #fff;
-  color: #606266;
-  font-size: 13px;
-  cursor: pointer;
-  transition:
-    color 0.2s ease,
-    border-color 0.2s ease,
-    background-color 0.2s ease;
-}
-
-.chat-panel__edit-action:hover {
-  color: #409eff;
-  border-color: #b3d8ff;
-  background: #ecf5ff;
-}
-
-.chat-panel__edit-action--send {
-  color: #fff;
-  background: #409eff;
-  border-color: #409eff;
-}
-
-.chat-panel__edit-action--send:hover {
-  color: #fff;
-  background: #66b1ff;
-  border-color: #66b1ff;
-} */
-
 .chat-panel__welcome {
   display: flex;
   justify-content: center;
@@ -571,57 +525,10 @@ watch(
   line-height: 1.6;
 }
 
-.chat-panel__suggestions {
-  text-align: left;
-  color: #606266;
-  font-size: 14px;
-  line-height: 1.7;
-}
-
-.chat-panel__suggestions-title {
-  margin: 0 0 8px;
-  color: #303133;
-  font-weight: 600;
-  font-size: 14px;
-  line-height: 1.5;
-}
-
 .chat-panel__streaming-tip {
   margin: -4px 2px 0;
   color: #909399;
   font-size: 12px;
-}
-
-.chat-panel__suggestion-item {
-  display: block;
-  width: 100%;
-  margin: 0 0 8px;
-  padding: 8px 12px;
-  text-align: left;
-  font-size: 13px;
-  line-height: 1.65;
-  color: #4e5969;
-  background: #f5f7fa;
-  border: 1px solid transparent;
-  border-radius: 10px;
-  cursor: pointer;
-  transition:
-    color 0.2s ease,
-    background-color 0.2s ease,
-    border-color 0.2s ease;
-}
-
-.chat-panel__suggestion-item:hover {
-  color: #409eff;
-  background: #edf5ff;
-  border-color: #d9ecff;
-}
-
-.chat-panel__suggestion-item.is-selected {
-  color: #409eff;
-  background: #ecf5ff;
-  border-color: #b3d8ff;
-  font-weight: 600;
 }
 
 .chat-panel-intro-enter-active,
