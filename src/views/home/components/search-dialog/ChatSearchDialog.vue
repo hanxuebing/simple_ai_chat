@@ -28,29 +28,19 @@ const normalizePreviewText = (text) =>
     .replace(/\s+/g, ' ')
     .trim()
 
-const getConversationTitle = (conversation) => {
-  const title = normalizePreviewText(conversation?.title)
-  if (title) return title
-
-  const messages = Array.isArray(conversation?.messages) ? conversation.messages : []
-  for (let index = 0; index < messages.length; index += 1) {
-    const message = messages[index]
-    const content = normalizePreviewText(message?.content)
-    if (content) return content
-  }
-
-  return '未命名会话'
-}
-
 const getConversationPreview = (conversation) => {
+  const matches = Array.isArray(conversation?.matches) ? conversation.matches : []
+  const snippets = matches.map((item) => normalizePreviewText(item?.snippet)).filter(Boolean)
+  if (snippets.length) return snippets
+
   const messages = Array.isArray(conversation?.messages) ? conversation.messages : []
   for (let index = 0; index < messages.length; index += 1) {
     const message = messages[index]
     const content = normalizePreviewText(message?.content)
-    if (content) return content
+    if (content) return [content]
   }
 
-  return '暂无可展示内容'
+  return ['暂无可展示内容']
 }
 
 const resolveSearchList = (response) => {
@@ -93,7 +83,7 @@ const performSearch = async (keyword) => {
     )
 
     if (requestId !== activeSearchRequestId) return
-    searchResults.value = resolveSearchList(response)
+    searchResults.value = resolveSearchList(response.results)
   } catch (error) {
     if (requestId !== activeSearchRequestId) return
     if (isRequestCanceled(error)) return
@@ -175,8 +165,13 @@ onBeforeUnmount(() => {
           :key="conversation?.id ?? conversation?.session_id ?? conversation?.sessionId ?? index"
           class="chat-search-dialog__item"
         >
-          <p class="chat-search-dialog__item-title">{{ getConversationTitle(conversation) }}</p>
-          <p class="chat-search-dialog__item-preview">{{ getConversationPreview(conversation) }}</p>
+          <p class="chat-search-dialog__item-title" v-html="conversation.title_snippet" />
+          <p
+            v-for="(preview, previewIndex) in getConversationPreview(conversation)"
+            :key="`${conversation?.session_id ?? conversation?.id ?? index}-${previewIndex}`"
+            class="chat-search-dialog__item-preview"
+            v-html="preview"
+          />
         </div>
       </div>
     </div>
@@ -242,18 +237,24 @@ onBeforeUnmount(() => {
 
 .chat-search-dialog__item-title {
   margin: 0;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 400;
   color: #0f172a;
   line-height: 1.5;
 }
 
 .chat-search-dialog__item-preview {
-  margin: 4px 0 0;
-  font-size: 13px;
+  margin: 6px 0 0;
+  font-size: 12px;
   color: #475569;
   line-height: 1.5;
   word-break: break-word;
+}
+
+.chat-search-dialog__item :deep(em) {
+  color: #0f172a;
+  font-style: normal;
+  font-weight: 600;
 }
 
 .chat-search-dialog__search-input {
