@@ -71,6 +71,10 @@ const handleSelectConversation = (conversation) => {
   visible.value = false
 }
 
+const handleCloseDialog = () => {
+  visible.value = false
+}
+
 const performSearch = async (keyword) => {
   const requestId = ++activeSearchRequestId
   const normalizedKeyword = String(keyword ?? '').trim()
@@ -165,20 +169,26 @@ onBeforeUnmount(() => {
     v-model="visible"
     width="678"
     align-center
+    :show-close="false"
     modal-class="chat-search-dialog-modal"
     class="chat-search-dialog"
   >
     <template #header>
-      <ElInput
-        v-model="localKeyword"
-        class="chat-search-dialog__search-input"
-        placeholder="搜索"
-        @keyup.enter="triggerImmediateSearch(localKeyword)"
-      >
-        <template #prefix>
-          <el-icon size="16"><i-ep-Search /></el-icon>
-        </template>
-      </ElInput>
+      <div class="chat-search-dialog__header-content">
+        <ElInput
+          v-model="localKeyword"
+          class="chat-search-dialog__search-input"
+          placeholder="搜索"
+          @keyup.enter="triggerImmediateSearch(localKeyword)"
+        >
+          <template #prefix>
+            <el-icon size="16"><i-ep-Search /></el-icon>
+          </template>
+        </ElInput>
+        <button type="button" class="chat-search-dialog__close-btn" @click="handleCloseDialog">
+          <el-icon size="18"><i-ep-Close /></el-icon>
+        </button>
+      </div>
     </template>
     <div class="chat-search-dialog__body">
       <ElEmpty v-if="!localKeyword.trim()" description="请输入关键词进行搜索" :image-size="56" />
@@ -263,11 +273,16 @@ onBeforeUnmount(() => {
   border-radius: 10px;
   background-color: #f8fafc;
   cursor: pointer;
-  transition: border-color 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .chat-search-dialog__item:hover {
-  border-color: #cbd5e1;
+  border-color: #d6dee9;
+  background-color: #f3f7fc;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
 }
 
 .chat-search-dialog__item-title {
@@ -296,9 +311,47 @@ onBeforeUnmount(() => {
   width: 100%;
 }
 
-.chat-search-dialog__search-input :deep(.el-input__wrapper) {
-  padding-inline: 0;
+.chat-search-dialog__header-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.chat-search-dialog__close-btn {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 8px;
   background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.chat-search-dialog__close-btn:hover {
+  background-color: #f1f5f9;
+  color: #334155;
+}
+
+.chat-search-dialog__search-input :deep(.el-input__wrapper) {
+  border-radius: 8px;
+  padding-inline: 0;
+  background-color: #f8fafc;
   box-shadow: none;
+  transition: background-color 0.2s ease;
+}
+
+.chat-search-dialog__search-input :deep(.el-input__wrapper:hover) {
+  background-color: #f1f5f9;
+}
+
+.chat-search-dialog__search-input :deep(.el-input.is-focus .el-input__wrapper) {
+  background-color: #eef2f7;
 }
 </style>
