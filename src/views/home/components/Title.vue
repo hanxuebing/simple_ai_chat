@@ -336,7 +336,9 @@ function drawMechanicalText(ctx, text, cx, cy, fontSize, t) {
 
     if (!locked && ch !== ' ') {
       const glyph =
-        hoverPower > 0.35 ? randomGlyph(i + Math.floor(t * 120)) : randomGlyph(i + Math.floor(t * 70))
+        hoverPower > 0.35
+          ? randomGlyph(i + Math.floor(t * 120))
+          : randomGlyph(i + Math.floor(t * 70))
       ctx.fillStyle = `rgba(0,0,0,${0.42 + hoverPower * 0.2})`
       ctx.fillText(glyph, cursorX, cy)
       ctx.fillStyle = `rgba(0,0,0,${0.92 + hoverPower * 0.05})`
@@ -566,12 +568,7 @@ function initGL() {
   gl.useProgram(program)
 
   const quad = new Float32Array([
-    -1, -1, 0, 0,
-    1, -1, 1, 0,
-    -1, 1, 0, 1,
-    -1, 1, 0, 1,
-    1, -1, 1, 0,
-    1, 1, 1, 1,
+    -1, -1, 0, 0, 1, -1, 1, 0, -1, 1, 0, 1, -1, 1, 0, 1, 1, -1, 1, 0, 1, 1, 1, 1,
   ])
 
   const buffer = gl.createBuffer()
@@ -672,6 +669,3 @@ onBeforeUnmount(() => {
   clip: rect(0, 0, 0, 0);
 }
 </style>
-
-
-
