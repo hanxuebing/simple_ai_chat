@@ -10,6 +10,10 @@ export function getConversationDetailApi (sessionId) {
   return get(`${CONVERSATIONS_API_PREFIX}/${sessionId}`)
 }
 
+export function searchConversationsApi (params = {}) {
+  return get(`${CONVERSATIONS_API_PREFIX}/search`, params)
+}
+
 export function createConversationApi (payload = {}) {
   return post(CONVERSATIONS_API_PREFIX, payload)
 }
@@ -21,3 +25,4 @@ export function deleteConversationApi (sessionId) {
 export function stopConversationStreamApi (payload = {}) {
   return post('/chat/stream/stop', payload)
 }
+
