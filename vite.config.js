@@ -38,6 +38,7 @@ function forceElementPlusLayer () {
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd())
   return {
+    base: env.VITE_APP_BASE,
     plugins: [
       forceElementPlusLayer(),
       vue(),
@@ -90,6 +91,4 @@ export default defineConfig(({ mode }) => {
     },
   }
 })
-
-
 
