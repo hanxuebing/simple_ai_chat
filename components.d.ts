@@ -19,6 +19,7 @@ declare module 'vue' {
     ElInput: typeof import('element-plus/es')['ElInput']
     ElPopover: typeof import('element-plus/es')['ElPopover']
     ElScrollbar: typeof import('element-plus/es')['ElScrollbar']
+    IEpClose: typeof import('~icons/ep/close')['default']
     IEpCopyDocument: typeof import('~icons/ep/copy-document')['default']
     IEpEdit: typeof import('~icons/ep/edit')['default']
     IEpEditPen: typeof import('~icons/ep/edit-pen')['default']
