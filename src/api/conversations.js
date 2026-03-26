@@ -10,8 +10,8 @@ export function getConversationDetailApi(sessionId) {
   return get(`${CONVERSATIONS_API_PREFIX}/${sessionId}`)
 }
 
-export function searchConversationsApi(params = {}) {
-  return get(`${CONVERSATIONS_API_PREFIX}/search`, params)
+export function searchConversationsApi(params = {}, config = {}) {
+  return get(`${CONVERSATIONS_API_PREFIX}/search`, params, config)
 }
 
 export function createConversationApi(payload = {}) {

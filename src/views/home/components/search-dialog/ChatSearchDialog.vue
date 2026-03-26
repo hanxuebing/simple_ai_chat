@@ -1,5 +1,6 @@
 <script setup>
 import { searchConversationsApi } from '@/api/conversations'
+import { abortRequestByKey, isRequestCanceled } from '@/utils/request'
 
 const props = defineProps({
   searchKeyword: {
@@ -20,6 +21,7 @@ const searchLoading = ref(false)
 const searchResults = ref([])
 let searchDebounceTimer = null
 let activeSearchRequestId = 0
+const SEARCH_ABORT_KEY = 'conversations-search-dialog'
 
 const normalizePreviewText = (text) =>
   String(text ?? '')
@@ -68,33 +70,37 @@ const resolveSearchList = (response) => {
 }
 
 const performSearch = async (keyword) => {
+  const requestId = ++activeSearchRequestId
   const normalizedKeyword = String(keyword ?? '').trim()
 
   if (!normalizedKeyword) {
+    abortRequestByKey(SEARCH_ABORT_KEY)
     searchResults.value = []
     searchLoading.value = false
     return
   }
 
-  const requestId = ++activeSearchRequestId
   searchLoading.value = true
 
   try {
-    const response = await searchConversationsApi({
-      keyword: normalizedKeyword,
-      page: 1,
-      page_size: 20,
-    })
+    const response = await searchConversationsApi(
+      {
+        keyword: normalizedKeyword,
+        page: 1,
+        page_size: 20,
+      },
+      { abortKey: SEARCH_ABORT_KEY },
+    )
 
     if (requestId !== activeSearchRequestId) return
     searchResults.value = resolveSearchList(response)
-  } catch {
+  } catch (error) {
     if (requestId !== activeSearchRequestId) return
+    if (isRequestCanceled(error)) return
     searchResults.value = []
   } finally {
-    if (requestId !== activeSearchRequestId) {
-      searchLoading.value = false
-    }
+    if (requestId !== activeSearchRequestId) return
+    searchLoading.value = false
   }
 }
 
@@ -135,6 +141,7 @@ onBeforeUnmount(() => {
   if (searchDebounceTimer) {
     clearTimeout(searchDebounceTimer)
   }
+  abortRequestByKey(SEARCH_ABORT_KEY)
 })
 </script>
 
