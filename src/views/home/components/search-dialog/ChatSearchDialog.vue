@@ -89,8 +89,9 @@ const performSearch = async (keyword) => {
     if (isRequestCanceled(error)) return
     searchResults.value = []
   } finally {
-    if (requestId !== activeSearchRequestId) return
-    searchLoading.value = false
+    if (requestId === activeSearchRequestId) {
+      searchLoading.value = false
+    }
   }
 }
 
@@ -105,6 +106,18 @@ const triggerDebouncedSearch = (keyword, { emitKeyword = true } = {}) => {
     }
     performSearch(keyword)
   }, 300)
+}
+
+const triggerImmediateSearch = (keyword = localKeyword.value, { emitKeyword = true } = {}) => {
+  if (searchDebounceTimer) {
+    clearTimeout(searchDebounceTimer)
+    searchDebounceTimer = null
+  }
+
+  if (emitKeyword) {
+    emit('update:searchKeyword', keyword)
+  }
+  performSearch(keyword)
 }
 
 watch(
@@ -149,6 +162,7 @@ onBeforeUnmount(() => {
         class="chat-search-dialog__search-input"
         placeholder="搜索"
         clearable
+        @keyup.enter="triggerImmediateSearch(localKeyword)"
       >
         <template #prefix>
           <el-icon size="16"><i-ep-Search /></el-icon>
