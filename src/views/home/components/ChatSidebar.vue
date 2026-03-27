@@ -38,16 +38,6 @@ const normalizePreviewText = (text) =>
     .trim()
 
 const getConversationTitle = (conversation) => {
-  const messages = Array.isArray(conversation?.messages) ? conversation.messages : []
-
-  for (let index = 0; index < messages.length; index += 1) {
-    const message = messages[index]
-    if (message?.role !== 'user') continue
-
-    const content = normalizePreviewText(message?.content)
-    if (content) return content
-  }
-
   return normalizePreviewText(conversation?.title) || '暂无消息'
 }
 

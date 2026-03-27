@@ -10,7 +10,6 @@ import { sendSseStream } from './useSseStream'
 const createId = () => `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
 const STREAM_API_URL = import.meta.env.VITE_API_BASE_URL + '/chat/stream'
 const DEFAULT_CONVERSATION_TITLE = '新聊天'
-const TITLE_FROM_ASSISTANT_MIN_LENGTH = 20
 
 // 截断标题，避免侧栏显示过长。
 const formatTitle = (content) => {
@@ -75,17 +74,10 @@ const createDraftConversation = () =>
     messageCount: 0,
   })
 
-const getTextLength = (value) => String(value ?? '').replace(/\s+/g, '').length
 const normalizeTitleText = (value) =>
   String(value ?? '')
     .replace(/\s+/g, ' ')
     .trim()
-
-// 仅在默认标题且回复文本足够长时，才自动生成会话标题。
-const shouldGenerateTitle = (title, content) => {
-  if (title && title !== DEFAULT_CONVERSATION_TITLE) return false
-  return getTextLength(content) >= TITLE_FROM_ASSISTANT_MIN_LENGTH
-}
 
 export const useConversationManager = () => {
   const conversations = ref([])
@@ -217,10 +209,10 @@ export const useConversationManager = () => {
     draftInputByConversationId.value.set(draftConversation.value.id, '')
   }
 
-  const maybeAssignConversationTitle = (conversation, assistantText) => {
-    const normalizedText = normalizeTitleText(assistantText)
-    if (!shouldGenerateTitle(conversation?.title, normalizedText)) return
-
+  const maybeAssignConversationTitleFromFirstQuestion = (conversation, questionText) => {
+    const normalizedText = normalizeTitleText(questionText)
+    if (!normalizedText) return
+    if (conversation?.title && conversation.title !== DEFAULT_CONVERSATION_TITLE) return
     conversation.title = formatTitle(normalizedText)
   }
 
@@ -278,7 +270,6 @@ export const useConversationManager = () => {
         loaded: true,
       })
 
-      conversation.title = normalizedDetail.title || conversation.title
       conversation.updatedAt = normalizedDetail.updatedAt
       conversation.messages = normalizedDetail.messages
       conversation.messageCount = Math.max(
@@ -398,9 +389,6 @@ export const useConversationManager = () => {
     const usedFallbackText = !assistantMessage.content && Boolean(fallbackText)
     if (usedFallbackText) {
       assistantMessage.content = fallbackText
-    } else {
-      // 流式结束后再尝试用完整回复生成标题，避免早期片段误命名。
-      maybeAssignConversationTitle(conversation, assistantMessage.content)
     }
 
     delete assistantMessage.streaming
@@ -457,6 +445,7 @@ export const useConversationManager = () => {
       role: 'user',
       content,
     })
+    maybeAssignConversationTitleFromFirstQuestion(currentConversation, content)
     currentConversation.updatedAt = Date.now()
     currentConversation.loaded = true
 
@@ -508,7 +497,6 @@ export const useConversationManager = () => {
 
           // 持续拼接 assistant 内容，驱动实时渲染。
           target.content += chunk
-          maybeAssignConversationTitle(conversation, target.content)
           conversation.updatedAt = Date.now()
           conversation.messageCount = conversation.messages.length
         },
