@@ -1,7 +1,7 @@
 <script setup>
-import { Bubble, Sender } from 'vue-element-plus-x'
+import { Bubble, Sender, XMarkdown } from 'vue-element-plus-x'
 import { useClipboard } from '@vueuse/core'
-import AnimatedGradientTitle from './AnimatedGradientTitle.vue'
+import PrimaryColorTitle from './PrimaryColorTitle.vue'
 import ChatSuggestions from './ChatSuggestions.vue'
 
 const props = defineProps({
@@ -159,6 +159,9 @@ const messages = computed(() => props.conversation?.messages ?? [])
 const resolveMessageContent = (message) =>
   isPendingAssistantMessage(message) ? '正在生成中...' : String(message.content ?? '')
 
+const shouldRenderMarkdownChart = (message) =>
+  message?.role === 'assistant' && !isPendingAssistantMessage(message)
+
 const getBubbleProps = (message) => ({
   content: resolveMessageContent(message),
   placement: message.role === 'user' ? 'end' : 'start',
@@ -311,6 +314,12 @@ watch(
                 </Sender>
               </div>
               <Bubble v-else class="chat-panel__bubble-item" v-bind="getBubbleProps(message)">
+                <template v-if="shouldRenderMarkdownChart(message)" #content>
+                  <XMarkdown
+                    class="chat-panel__markdown-content"
+                    :markdown="resolveMessageContent(message)"
+                  />
+                </template>
                 <template #footer>
                   <div class="chat-panel__bubble-actions">
                     <button
@@ -352,8 +361,10 @@ watch(
           <Transition :name="welcomeTransitionName">
             <div v-if="!hasMessages" class="chat-panel__welcome">
               <div class="chat-panel__welcome-card">
-                <AnimatedGradientTitle text="开始新会话" tag="p" />
-                <p class="chat-panel__welcome-description">输入APT问题，我们会为你分析</p>
+                <PrimaryColorTitle text="APT智能分析助手" tag="p" />
+                <p class="chat-panel__welcome-description">
+                  基于多维威胁情报与AI大模型的深度关联分析，为您提供精准的攻击溯源与防御建议
+                </p>
               </div>
             </div>
           </Transition>
@@ -463,6 +474,10 @@ watch(
 .chat-panel__bubble-item:hover .chat-panel__bubble-actions {
   opacity: 1;
   pointer-events: auto;
+}
+
+.chat-panel__markdown-content {
+  width: 100%;
 }
 
 .chat-panel__composer-section {
