@@ -19,7 +19,7 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['update:draftInput', 'submitMessage', 'cancel'])
+const emit = defineEmits(['update:draftInput', 'submitMessage', 'cancel', 'markdownLinkClick'])
 
 const { copy, isSupported } = useClipboard({ legacy: true })
 const copiedMessageKeys = ref(new Set())
@@ -254,6 +254,27 @@ const handleCancel = () => {
   emit('cancel', props.conversation?.id)
 }
 
+const handleMarkdownLinkClick = (event) => {
+  if (!(event.target instanceof Element)) return
+  const anchor = event.target.closest('a')
+  if (!anchor) return
+
+  const href = String(anchor.href ?? anchor.getAttribute('href') ?? '').trim()
+  if (!href) return
+
+  event.preventDefault()
+  event.stopPropagation()
+
+  window.open(href, '_blank', 'noopener,noreferrer')
+
+  emit('markdownLinkClick', {
+    href,
+    text: String(anchor.textContent ?? '').trim(),
+    target: String(anchor.getAttribute('target') ?? ''),
+    rel: String(anchor.getAttribute('rel') ?? ''),
+  })
+}
+
 onBeforeUnmount(() => {
   copyResetTimers.forEach((timer) => clearTimeout(timer))
   copyResetTimers.clear()
@@ -318,6 +339,7 @@ watch(
                   <XMarkdown
                     class="chat-panel__markdown-content"
                     :markdown="resolveMessageContent(message)"
+                    @click.capture="handleMarkdownLinkClick"
                   />
                 </template>
                 <template #footer>
