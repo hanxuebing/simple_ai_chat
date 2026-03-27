@@ -62,7 +62,7 @@ const suggestionGroups = [
   {
     id: 'group-c',
     icon: getSuggestionIcon('group-c'),
-    title: 'IC与技战术分析',
+    title: 'IoC与技战术分析',
     questions: ['T1592攻击技术解析', '分析IP:104.128.239.70'],
   },
   {
