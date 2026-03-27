@@ -186,7 +186,7 @@ const handleDeleteConversation = async (conversation) => {
       </div>
     </ElScrollbar>
 
-    <div class="chat-sidebar__version" :class="{ 'is-collapsed': props.collapsed }">v0.0.2</div>
+    <!-- <div class="chat-sidebar__version" :class="{ 'is-collapsed': props.collapsed }">v0.0.2</div> -->
     <ChatSearchDialog
       v-model="searchDialogVisible"
       :search-keyword="props.searchKeyword"
