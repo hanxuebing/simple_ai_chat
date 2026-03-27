@@ -39,7 +39,7 @@ const senderText = computed({
 })
 
 const handleSuggestionPick = (question) => {
-  senderText.value = question
+  handleSubmit(question)
 }
 
 const setCopySuccessState = (messageKey) => {
@@ -391,11 +391,7 @@ watch(
             </div>
           </Transition>
 
-          <ChatSuggestions
-            v-if="!hasMessages"
-            :selected-question="senderText"
-            @pick="handleSuggestionPick"
-          />
+          <ChatSuggestions v-if="!hasMessages" @pick="handleSuggestionPick" />
 
           <Sender
             v-model="senderText"

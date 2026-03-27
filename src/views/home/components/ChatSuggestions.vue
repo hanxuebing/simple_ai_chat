@@ -20,7 +20,6 @@
           :key="question"
           type="button"
           class="chat-panel__suggestion-item"
-          :class="{ 'is-selected': props.selectedQuestion === question }"
           @click="handlePick(question)"
         >
           {{ question }}
@@ -31,13 +30,6 @@
 </template>
 
 <script setup>
-const props = defineProps({
-  selectedQuestion: {
-    type: String,
-    default: '',
-  },
-})
-
 const emit = defineEmits(['pick'])
 
 const getSuggestionIcon = (id) =>
@@ -164,13 +156,6 @@ const handlePick = (question) => {
   color: #409eff;
   background: #edf5ff;
   border-color: #d9ecff;
-}
-
-.chat-panel__suggestion-item.is-selected {
-  color: #409eff;
-  background: #ecf5ff;
-  border-color: #b3d8ff;
-  font-weight: 600;
 }
 
 .chat-panel__suggestion-item:last-child {
