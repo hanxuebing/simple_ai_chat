@@ -5,12 +5,12 @@ export const isRequestCanceled = (error) =>
 
 const abortControllerMap = new Map()
 
-// const getCookieValue = (key) => {
-//   if (!key || typeof document === 'undefined') return ''
-//   const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-//   const match = document.cookie.match(new RegExp(`(?:^|;\\s*)${escapedKey}=([^;]*)`))
-//   return match ? decodeURIComponent(match[1]) : ''
-// }
+const getCookieValue = (key) => {
+  if (!key || typeof document === 'undefined') return ''
+  const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const match = document.cookie.match(new RegExp(`(?:^|;\\s*)${escapedKey}=([^;]*)`))
+  return match ? decodeURIComponent(match[1]) : ''
+}
 
 export const abortRequestByKey = (abortKey) => {
   if (!abortKey) return
@@ -44,10 +44,10 @@ const request = axios.create({
 
 request.interceptors.request.use(
   (config) => {
-    // const apiKey = getCookieValue('X-Api-Key')
-    // if (apiKey) {
-    //   config.headers['x-api-key'] = apiKey
-    // }
+    const apiKey = getCookieValue('X-Api-Key')
+    if (apiKey) {
+      config.headers['X-Api-Key'] = apiKey
+    }
     const abortKey = config?.abortKey
     if (abortKey && !config.signal) {
       abortRequestByKey(abortKey)
