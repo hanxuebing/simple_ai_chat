@@ -6,6 +6,15 @@ import {
 } from '@/api/conversations'
 import { sendSseStream } from './useSseStream'
 
+/**
+ * 统一管理首页聊天会话的状态与行为。
+ *
+ * 这个 composable 主要解决三类问题：
+ * 1. 会话列表 / 当前激活会话 / 草稿会话的切换。
+ * 2. 每个会话各自独立的输入草稿与流式请求状态。
+ * 3. 列表接口、详情接口、SSE 回包之间的数据结构归一化。
+ */
+
 // 生成前端侧临时 ID（草稿消息、未持久化会话等）。
 const createId = () => `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
 const STREAM_API_URL = import.meta.env.VITE_API_BASE_URL + '/chat/stream'
@@ -90,7 +99,10 @@ export const useConversationManager = () => {
   // key: conversationId, value: AbortController
   const streamingControllersByConversationId = ref(new Map())
 
+  // 用于防抖同一会话详情的重复请求；不是响应式状态，因为它不直接参与渲染。
   const loadingConversationDetailSet = new Set()
+
+  // 当前“新聊天”占位会话。它不一定已经在后端落库，但 UI 会把它当成当前会话来展示。
   const draftConversation = ref(createDraftConversation())
 
   // 输入草稿隔离：每个会话保存各自输入框文本。
@@ -104,11 +116,13 @@ export const useConversationManager = () => {
   const resolveConversationInputKey = (conversationId = activeConversationId.value) =>
     String(conversationId ?? '').trim() || draftConversation.value.id
 
+  // 读取某个会话的输入草稿；如果没有显式传入 id，就读取当前会话对应的草稿。
   const getDraftInputByConversationId = (conversationId = '') => {
     const key = resolveConversationInputKey(conversationId)
     return draftInputByConversationId.value.get(key) ?? ''
   }
 
+  // 保证每个会话切换回来时，都能恢复自己上次输入到一半的内容。
   const setDraftInputByConversationId = (conversationId = '', value = '') => {
     const key = resolveConversationInputKey(conversationId)
     draftInputByConversationId.value.set(key, String(value ?? ''))
@@ -186,6 +200,7 @@ export const useConversationManager = () => {
     const target = String(conversationIdOrSessionId ?? '').trim()
     if (!target) return ''
 
+    // 允许外部既传前端会话 id，也传后端 session_id，统一映射到本地 conversation.id。
     const matchedConversation = conversations.value.find(
       (conversation) => conversation.id === target || conversation.sessionId === target,
     )
@@ -213,6 +228,8 @@ export const useConversationManager = () => {
     const normalizedText = normalizeTitleText(questionText)
     if (!normalizedText) return
     if (conversation?.title && conversation.title !== DEFAULT_CONVERSATION_TITLE) return
+
+    // 仅在标题还是默认值时，才拿首问内容生成标题，避免覆盖用户已有标题。
     conversation.title = formatTitle(normalizedText)
   }
 
@@ -224,6 +241,7 @@ export const useConversationManager = () => {
     }
 
     // 当前是草稿态发送：将草稿提升为真实会话容器后再发送。
+    // 注意：这里先创建本地会话，真正的后端 session_id 会在 SSE session 事件中回填。
     const nextConversation = buildConversation({
       id: createId(),
       sessionId: '',
@@ -263,6 +281,8 @@ export const useConversationManager = () => {
 
     try {
       const detail = await getConversationDetailApi(conversation.sessionId)
+
+      // 详情接口返回的数据结构可能和列表接口不同，这里统一再走一次 buildConversation。
       const normalizedDetail = buildConversation({
         ...detail,
         id: conversation.id,
@@ -296,6 +316,7 @@ export const useConversationManager = () => {
 
       const list = Array.isArray(response?.conversations) ? response.conversations : []
 
+      // 列表接口只用于渲染侧边栏，因此先构造“轻量会话”，详情在用户点开后再懒加载。
       conversations.value = list.map((item) =>
         buildConversation({
           ...item,
@@ -354,6 +375,7 @@ export const useConversationManager = () => {
     const targetIndex = conversations.value.findIndex((item) => item.id === conversationId)
     if (targetIndex < 0) return
 
+    // 本地删除放在接口成功后执行，避免服务端失败但前端状态提前丢失。
     conversations.value.splice(targetIndex, 1)
     draftInputByConversationId.value.delete(conversationId)
 
@@ -386,11 +408,13 @@ export const useConversationManager = () => {
     const assistantMessage = conversation.messages.find((item) => item.id === assistantMessageId)
     if (!assistantMessage) return
 
+    // 如果整个流结束后都没有拼出正文，则填入一个兜底文案，避免界面上出现空消息气泡。
     const usedFallbackText = !assistantMessage.content && Boolean(fallbackText)
     if (usedFallbackText) {
       assistantMessage.content = fallbackText
     }
 
+    // streaming 字段只在流式过程中有意义，收尾时删掉让消息回归普通态。
     delete assistantMessage.streaming
     conversation.updatedAt = Date.now()
     conversation.messageCount = conversation.messages.length
@@ -419,6 +443,8 @@ export const useConversationManager = () => {
     const stopPayload = {
       session_id: sessionId,
     }
+
+    // 如果后端支持 message_id，尽量带上，便于它准确停止当前回答而不是整个上下文。
     if (messageId) {
       stopPayload.message_id = messageId
     }
@@ -445,6 +471,8 @@ export const useConversationManager = () => {
       role: 'user',
       content,
     })
+
+    // 用户消息先本地落入消息列表，保证发送瞬间 UI 立刻可见，不依赖接口返回。
     maybeAssignConversationTitleFromFirstQuestion(currentConversation, content)
     currentConversation.updatedAt = Date.now()
     currentConversation.loaded = true
@@ -491,6 +519,7 @@ export const useConversationManager = () => {
           const target = conversation.messages.find((item) => item.id === assistantMessage.id)
           if (!target) return
 
+          // done 事件只表示流结束，不一定携带文本内容。
           if (typeof payload === 'object' && payload?.done) return
           const chunk = resolveStreamText(payload)
           if (!chunk) return
@@ -525,6 +554,7 @@ export const useConversationManager = () => {
     loadConversations()
   })
 
+  // 对外暴露的是“页面可直接消费”的状态和动作，不暴露内部归一化 / 辅助函数。
   return {
     conversations,
     searchKeyword,
